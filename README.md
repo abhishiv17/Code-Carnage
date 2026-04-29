@@ -1,4 +1,4 @@
-# 🚀 Code Carnage 2.0 — Team Boilerplate
+# 🚀 SkillSwap — Peer-to-Peer Skill Barter Platform
 
 > **Problem Statement:** College students want to learn new skills from each other (e.g., Python for Guitar) but lack money for formal coaching and a platform to connect.
 >
@@ -7,41 +7,56 @@
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://vercel.com)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase-3FCF8E?logo=supabase)](https://supabase.com)
-[![Groq](https://img.shields.io/badge/AI-Groq%20%7C%20LLaMA3-F55036)](https://groq.com)
+[![Groq](https://img.shields.io/badge/AI-Groq%20%7C%20LLaMA3.1-F55036)](https://groq.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)](https://typescriptlang.org)
 
 ---
 
-## 📋 Scaffold Status Tracker
+## ✨ Features
 
-> **Instructions:** Update this table as you build. Move each item from 🔲 SCAFFOLD → 🔨 IN PROGRESS → ✅ DONE.
+### 🏠 Landing Page
+- Stunning glassmorphic landing page with dark mode support
+- Animated statistics, feature cards, and smooth scroll navigation
+- Responsive mobile-first design with hamburger menu
 
-| Area | File / Feature | Status | Owner |
-|---|---|---|---|
-| Landing Page | `app/page.tsx` | 🔲 SCAFFOLD | Arjun |
-| Auth — Login | `app/(auth)/login/page.tsx` | 🔲 SCAFFOLD | Kiran |
-| Auth — Signup | `app/(auth)/signup/page.tsx` | 🔲 SCAFFOLD | Kiran |
-| Dashboard Page | `app/dashboard/page.tsx` | 🔲 SCAFFOLD | Arjun |
-| Dashboard Layout + Auth Guard | `app/dashboard/layout.tsx` | 🔲 SCAFFOLD | Kiran |
-| AI Matching Endpoint | `app/api/ai/match/route.ts` | ✅ DONE | Abhishek |
-| Groq Matching Agent | `services/ai/matchingAgent.ts` | ✅ DONE | Abhishek |
-| AI Prompts | `services/ai/prompts.ts` | ✅ DONE | Abhishek |
-| WebRTC Signaling | `services/webrtc/signaling.ts` | ✅ DONE | Chethan |
-| Video Call Room | `app/dashboard/sessions/[id]/page.tsx` | 🔲 SCAFFOLD | Arjun |
-| Session Create Endpoint | `app/api/sessions/create/route.ts` | ✅ DONE | Kiran |
-| Credit Economy Endpoint | `app/api/sessions/end/route.ts` | ✅ DONE | Kiran |
-| Reviews Endpoint | `app/api/reviews/route.ts` | ✅ DONE | Chethan |
-| Navbar (Web + Mobile) | `components/shared/Navbar.tsx` | 🔲 SCAFFOLD | Arjun |
-| Footer | `components/shared/Footer.tsx` | 🔲 SCAFFOLD | Arjun |
-| Database Schema | `types/database.ts` | ✅ DONE | Kiran |
-| API Types | `types/api.ts` | 🔲 SCAFFOLD | Chethan |
-| App Constants | `lib/constants.ts` | 🔲 SCAFFOLD | All |
-| Supabase Client | `lib/supabase/client.ts` | ✅ DONE | Kiran |
-| Supabase Server | `lib/supabase/server.ts` | ✅ DONE | Kiran |
-| Session Accept Endpoint | `app/api/sessions/accept/route.ts` | ✅ DONE | Kiran |
-| Realtime Session Notifications | `services/realtime/sessions.ts` | ✅ DONE | Chethan |
-| Backend Test Page | `app/test/page.tsx` | ✅ DONE | Abhishek |
-| Health Check API | `app/api/health/route.ts` | ✅ DONE | Abhishek |
+### 🔐 Authentication
+- Email/password sign-up and login via Supabase Auth
+- GitHub OAuth integration
+- Magic link authentication
+- Session-based auth with middleware protection
+- Guided onboarding flow (skill selection + profile setup)
+
+### 📊 Dashboard
+- **Marketplace** — Browse and discover skill listings from other students
+- **AI Matches** — Groq-powered AI matching engine finds compatible skill-swap partners
+- **Sessions** — View pending, active, and completed sessions
+- **Profile** — Full profile editor with academic info, social links, and preferences
+- **Reviews** — Rate and review your peers after sessions
+- **Leaderboard** — Top contributors ranked by sessions, ratings, and credits
+
+### 🤖 AI-Powered Features
+- **Smart Matchmaker** — AI recommends specific peers based on skills, college, city, and preferences
+- **AI Chatbot** — Floating assistant powered by Groq (Llama 3.1) for:
+  - Finding skill matches ("Who can teach me React?")
+  - Platform guidance ("How do credits work?")
+  - Pre-session prep ("Give me a crash course on Python")
+  - Icebreaker generation for shy students
+
+### 🔔 Real-Time Notifications
+- Supabase Realtime-powered live notification system
+- Instant alerts when someone requests a session with you
+- Notification dropdown with mark-as-read and clear-all actions
+- Type-based icons and relative timestamps
+
+### 💰 Credit Economy
+- Start with 1 credit
+- Teaching a session = +1 credit earned
+- Learning a session = -1 credit spent
+- Credit balance displayed across dashboard
+
+### 📹 WebRTC Video Calls
+- Peer-to-peer video/audio sessions via WebRTC signaling
+- Session room pages with join functionality
 
 ---
 
@@ -51,173 +66,155 @@
 |---|---|---|
 | **Framework** | Next.js 15 (App Router) | Web + API in one repo |
 | **Language** | TypeScript 5.8 (strict) | Type safety across the board |
-| **Styling** | Tailwind CSS v4 | Utility-first, mobile-first |
-| **Components** | shadcn/ui | Accessible, composable UI primitives |
+| **Styling** | Tailwind CSS | Utility-first, mobile-first |
 | **Icons** | Lucide React | Consistent iconography |
 | **Database** | Supabase — PostgreSQL | Relational data + Row Level Security |
-| **Auth** | Supabase Auth | Email/password, OAuth, session cookies |
-| **Realtime** | Supabase Realtime | Live data subscriptions |
-| **Storage** | Supabase Storage | File uploads, media |
-| **AI / LLM** | Groq API — `llama3-8b-8192` | Ultra-fast inference for AI peer matching |
-| **Video/Audio** | WebRTC + PeerJS | In-app P2P video sessions |
+| **Auth** | Supabase Auth | Email/password, GitHub OAuth, Magic Links |
+| **Realtime** | Supabase Realtime | Live notifications via postgres_changes |
+| **AI / LLM** | Groq API — `llama-3.1-8b-instant` | AI matching + streaming chatbot |
+| **Video/Audio** | WebRTC | In-app P2P video sessions |
 | **Deployment** | Vercel | CI/CD, preview URLs, edge runtime |
 
 ---
 
-## 🎨 Design & Theming Profiles
-
-Our boilerplate is currently pre-configured with the **"Command Center"** profile (Dark Mode Default, Slate Base, Violet Primary, 0.3rem Radius), which is perfect for AI and Infrastructure tools. 
-
-If your hackathon idea pivots, you can easily switch to one of these alternative UI profiles using the `shadcn/ui` theme builder:
-
-### 1. The 'Command Center' Profile (Default)
-- **Best for:** AI & Infrastructure tools
-- **Style:** Nova (`new-york`)
-- **Base Color:** Slate or Zinc
-- **Theme/Primary Color:** Violet or Blue
-- **Radius:** 0.3rem or 0rem
-- **Why it stands out:** Creates a sleek, terminal-inspired aesthetic. When displaying reasoning logs, API responses, or system diagnostics, the sharp edges and cool slate tones give the interface a high-tech, enterprise-grade feel.
-
-### 2. The 'Eco-Metrics' Profile
-- **Best for:** Sustainability & Logistics
-- **Style:** Default
-- **Base Color:** Stone
-- **Theme/Primary Color:** Green
-- **Radius:** 0.75rem or 1.0rem
-- **Why it stands out:** For rendering carbon footprint charts or mapping efficient route logistics, Stone paired with Green feels organic yet strictly data-driven. The softer rounded corners make dense data visualizations more approachable without losing readability.
-
-### 3. The 'Critical Alert' Profile
-- **Best for:** High-Impact Demos
-- **Style:** Nova (`new-york`)
-- **Base Color:** Neutral
-- **Theme/Primary Color:** Rose or Orange
-- **Radius:** 0.5rem
-- **Why it stands out:** During a quick presentation, eyes need to be drawn immediately to the problem the system is solving. Using Rose or Orange accents against a stark Neutral background makes error states, alerts, or bottleneck resolutions pop right off the screen.
-
-> **Boilerplate Integration Tip:** 
-> After selecting these exact settings on the `shadcn/ui` builder, simply click **Copy Code** and drop the generated `components.json` and CSS variables straight into the codebase. Toggling on the dark mode default in `app/layout.tsx` is highly recommended—complex dashboards built under a tight timeline almost always look significantly more polished and visually cohesive in dark mode.
-
----
-
-## 📁 Directory Structure
-
-> Every file marked `[SCAFFOLD]` is pre-wired and ready to be filled in with your feature logic. Do not rename or move scaffold files — update their internals instead.
+## 📁 Project Structure
 
 ```
 .
-├── app/                                     # Next.js App Router root
-│   ├── layout.tsx                           # [SCAFFOLD] Root layout — add providers here
-│   ├── page.tsx                             # [SCAFFOLD] Landing / home page
-│   ├── globals.css                          # [SCAFFOLD] Tailwind + CSS variable tokens
+├── app/
+│   ├── layout.tsx                           # Root layout with providers + fonts
+│   ├── page.tsx                             # Landing page
+│   ├── globals.css                          # Design tokens + theme variables
 │   │
-│   ├── (auth)/                              # Route group — unauthenticated pages (no layout)
-│   │   ├── login/
-│   │   │   └── page.tsx                    # [SCAFFOLD] Supabase email/password sign-in
-│   │   └── signup/
-│   │       └── page.tsx                    # [SCAFFOLD] New user registration
+│   ├── (auth)/                              # Auth pages (login, signup)
+│   │   ├── login/page.tsx
+│   │   └── signup/page.tsx
 │   │
-│   ├── dashboard/                           # Protected section — requires active session
-│   │   ├── layout.tsx                       # [SCAFFOLD] Auth guard + Navbar wrapper
-│   │   └── page.tsx                         # [SCAFFOLD] Main dashboard view
+│   ├── auth/callback/route.ts               # OAuth callback handler
+│   ├── onboarding/page.tsx                  # Guided skill selection + profile setup
 │   │
-│   └── api/                                 # Serverless API route handlers
-│       ├── ai/
-│       │   └── match/
-│       │       └── route.ts                # [SCAFFOLD] POST — Groq LLaMA3 matching endpoint
-│       ├── webhook/
-│       │   └── route.ts                    # [SCAFFOLD] POST — Inbound event receiver
-│       └── health/
-│           └── route.ts                    # [DONE]    GET  — Service health check
+│   ├── dashboard/                           # Protected dashboard section
+│   │   ├── layout.tsx                       # Auth guard + Sidebar + TopBar + ChatbotWidget
+│   │   ├── page.tsx                         # Marketplace (browse skill listings)
+│   │   ├── matches/page.tsx                 # AI-powered peer matching
+│   │   ├── sessions/page.tsx                # Active & completed sessions
+│   │   ├── sessions/[id]/page.tsx           # Individual session / video call room
+│   │   ├── profile/page.tsx                 # Full profile editor
+│   │   ├── reviews/page.tsx                 # Peer review system
+│   │   └── leaderboard/page.tsx             # Top contributors ranked
+│   │
+│   └── api/                                 # API routes
+│       ├── ai/match/route.ts                # POST — Groq AI matching endpoint
+│       ├── ai/chat/route.ts                 # POST — Streaming AI chatbot (Llama 3.1)
+│       ├── sessions/create/route.ts         # POST — Create session + notify teacher
+│       ├── sessions/accept/route.ts         # POST — Accept session request
+│       ├── sessions/end/route.ts            # POST — End session + credit transfer
+│       ├── reviews/route.ts                 # POST — Submit peer review
+│       └── health/route.ts                  # GET  — Health check
 │
 ├── components/
-│   ├── ui/                                  # ⚙️  AUTO-GENERATED by shadcn CLI — DO NOT edit
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   ├── dialog.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── input.tsx
-│   │   ├── label.tsx
-│   │   ├── toast.tsx
-│   │   └── ...                             # Add via: npx shadcn@latest add <component>
+│   ├── dashboard/                           # Dashboard-specific components
+│   │   ├── Sidebar.tsx                      # Collapsible sidebar navigation
+│   │   ├── TopBar.tsx                       # Search + credits + live notifications + avatar
+│   │   ├── StatsOverview.tsx                # Clickable stat cards (credits, sessions, rating)
+│   │   ├── SkillCard.tsx                    # Marketplace listing card
+│   │   └── CreditBadge.tsx                  # Credit display badge
 │   │
-│   └── shared/                              # ✏️  CUSTOM — Team-authored reusable components
-│       ├── Navbar.tsx                       # [SCAFFOLD] Responsive nav — web + mobile hamburger
-│       ├── Footer.tsx                       # [SCAFFOLD] Global footer with project links
-│       ├── PageWrapper.tsx                  # [SCAFFOLD] Max-width container utility
-│       ├── LoadingSpinner.tsx               # [SCAFFOLD] Spinner + full-page loading state
-│       └── ErrorBoundary.tsx               # [SCAFFOLD] Client-side React error boundary
+│   ├── shared/                              # Reusable UI components
+│   │   ├── Navbar.tsx                       # Landing page navbar
+│   │   ├── Footer.tsx                       # Landing page footer
+│   │   ├── GlassCard.tsx                    # Glassmorphic card component
+│   │   ├── GradientButton.tsx               # Gradient action button
+│   │   ├── SkillBadge.tsx                   # Skill tag (have/want variants)
+│   │   ├── AnimatedCounter.tsx              # Animated number counter
+│   │   ├── ChatbotWidget.tsx                # Floating AI chatbot with markdown
+│   │   ├── ThemeToggle.tsx                  # Dark/light mode toggle
+│   │   ├── PageWrapper.tsx                  # Container utility
+│   │   ├── LoadingSpinner.tsx               # Loading state
+│   │   └── ErrorBoundary.tsx                # Error boundary
+│   │
+│   └── landing/                             # Landing page sections
+│       └── Features.tsx                     # Feature showcase
+│
+├── hooks/
+│   ├── useUser.ts                           # Auth + profile + skills state
+│   └── useNotifications.ts                  # Real-time notification subscription
 │
 ├── lib/
 │   ├── supabase/
-│   │   ├── client.ts                        # [DONE] Browser Supabase client (use in "use client")
-│   │   └── server.ts                        # [DONE] Server Supabase client (use in RSC/routes)
-│   ├── utils.ts                             # [SCAFFOLD] cn() helper + shared utility functions
-│   └── constants.ts                         # [SCAFFOLD] APP_NAME, ROUTES, NAV_LINKS, GROQ_CONFIG
+│   │   ├── client.ts                        # Browser Supabase client
+│   │   └── server.ts                        # Server Supabase client
+│   ├── constants.ts                         # Routes, skill categories, skill list
+│   └── utils.ts                             # cn() helper + utilities
 │
 ├── services/
 │   ├── ai/
-│   │   ├── groqClient.ts                    # [DONE] Groq SDK singleton (server-only)
-│   │   ├── matchingAgent.ts                 # [SCAFFOLD] LLaMA3 agentic matching workflow
-│   │   └── prompts.ts                       # [SCAFFOLD] All system & user prompt templates
+│   │   ├── groqClient.ts                    # Groq SDK singleton
+│   │   ├── matchingAgent.ts                 # LLaMA3 matching workflow
+│   │   └── prompts.ts                       # System & user prompt templates
 │   │
 │   └── webrtc/
-│       ├── signaling.ts                     # [SCAFFOLD] WebRTC peer signaling logic
-│       └── index.ts                         # [SCAFFOLD] Barrel export for webrtc
+│       ├── signaling.ts                     # WebRTC peer signaling logic
+│       └── index.ts                         # Barrel export
+│
+├── supabase/
+│   └── migrations/
+│       ├── add_profile_fields.sql           # Extended profile columns (15 fields)
+│       └── add_notifications_and_leaderboard.sql  # Notifications table + Realtime
 │
 ├── types/
-│   ├── database.ts                          # [SCAFFOLD] Supabase DB schema types (auto-gen later)
-│   ├── api.ts                               # [SCAFFOLD] API request/response payload types
-│   └── index.ts                             # [SCAFFOLD] Global interfaces, enums, utility types
+│   ├── database.ts                          # Supabase DB schema types
+│   ├── api.ts                               # API payload types
+│   └── index.ts                             # Global interfaces
 │
-├── public/
-│   ├── favicon.ico                          # [SCAFFOLD] Replace with your project favicon
-│   ├── logo.svg                             # [SCAFFOLD] Replace with your project logo
-│   └── images/                              # Static image assets
-│
-├── .env.local                               # 🔒 SECRET — Never commit. Add to .gitignore ✓
-├── .env.local.example                       # ✅ Committed — template for teammates
-├── .gitignore                               # Pre-configured for Next.js + Supabase + Vercel
-├── components.json                          # shadcn/ui CLI configuration
-├── next.config.ts                           # [SCAFFOLD] Image domains, experimental flags
-├── tailwind.config.ts                       # Tailwind v4 config (CSS-first)
-├── tsconfig.json                            # TypeScript strict mode + path aliases
-└── package.json                             # All dependencies pinned — see requirements.txt
+├── supabase_schema.sql                      # Full database schema (profiles, skills, sessions, reviews)
+├── .env.local.example                       # Environment variable template
+├── next.config.ts                           # Next.js configuration
+├── tailwind.config.ts                       # Tailwind configuration
+├── tsconfig.json                            # TypeScript strict mode + aliases
+└── package.json                             # Dependencies
 ```
+
+---
+
+## 🗄️ Database Schema
+
+### Tables
+
+| Table | Purpose | Key Columns |
+|---|---|---|
+| `profiles` | User profiles linked to auth | username, college, degree, city, credits, rating, etc. |
+| `skills` | Skills users offer or want | user_id, skill_name, type (offered/desired) |
+| `sessions` | Skill exchange sessions | teacher_id, learner_id, status (pending/active/completed) |
+| `reviews` | Post-session peer reviews | session_id, reviewer_id, reviewee_id, rating (1-5), feedback |
+| `notifications` | Real-time notification feed | user_id, type, title, message, link, is_read |
+
+### Key Features
+- **Row Level Security (RLS)** on all tables
+- **Realtime** enabled on notifications table
+- **Auto-triggers**: Profile creation on signup, average rating calculation on review
 
 ---
 
 ## 🔐 Environment Variables
 
-Copy `.env.local.example` → `.env.local` and fill in your credentials before running the app.
+Copy `.env.local.example` → `.env.local` and fill in your credentials:
 
 ```bash
 cp .env.local.example .env.local
 ```
 
 ```bash
-# .env.local.example
-
-# ─── Supabase ─────────────────────────────────────────────────────────────────
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 
-# ─── Groq AI ──────────────────────────────────────────────────────────────────
-# SERVER-ONLY — never prefix with NEXT_PUBLIC_
+# Groq AI (server-only — never prefix with NEXT_PUBLIC_)
 GROQ_API_KEY=your-groq-api-key-here
 
-# ─── App Config ───────────────────────────────────────────────────────────────
+# App Config
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# ─── External Integrations (add as needed) ────────────────────────────────────
-# EXTERNAL_API_BASE_URL=https://api.example.com
-# EXTERNAL_API_KEY=your-external-api-key-here
-# WEBHOOK_SECRET=your-webhook-signing-secret
 ```
-
-> **Security rules:**
-> - `NEXT_PUBLIC_*` vars are bundled into the browser. Use only for non-sensitive config.
-> - `GROQ_API_KEY` is server-only. Never reference it in `"use client"` files.
-> - `.env.local` is already in `.gitignore`. Never commit it.
 
 ---
 
@@ -228,174 +225,62 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 git clone https://github.com/YOUR_ORG/YOUR_REPO.git
 cd YOUR_REPO
 
-# 2. Switch to dev immediately (never work on main)
-git checkout dev
-
-# 3. Install all dependencies
+# 2. Install dependencies
 npm install
 
-# 4. Set up environment variables
+# 3. Set up environment variables
 cp .env.local.example .env.local
-# → Open .env.local and fill in all values before continuing
+# → Fill in all values
+
+# 4. Run the database migrations
+# Go to Supabase Dashboard → SQL Editor → run:
+#   - supabase_schema.sql (core tables)
+#   - supabase/migrations/add_profile_fields.sql (extended profile)
+#   - supabase/migrations/add_notifications_and_leaderboard.sql (notifications + realtime)
 
 # 5. Start the development server
 npm run dev
 # → App runs at http://localhost:3000
 ```
 
-### Pre-flight Build Check
-
-Run this before pushing or opening a PR to catch errors early:
+### Pre-flight Checks
 
 ```bash
-npm run build        # Full production build — must pass before PR
-npm run lint         # ESLint check — zero errors allowed
-npx tsc --noEmit     # TypeScript check — zero errors allowed
-```
-
-### Adding shadcn/ui Components
-
-```bash
-# Always use the CLI — never create files in /components/ui manually
-npx shadcn@latest add badge
-npx shadcn@latest add table
-npx shadcn@latest add sheet
-npx shadcn@latest add select
-npx shadcn@latest add avatar
-```
-
-### Generating Supabase Types
-
-```bash
-# After finalising your database schema, auto-generate types/database.ts:
-npx supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.ts
+npx tsc --noEmit     # TypeScript check — zero errors required
+npm run build        # Full production build
+npm run lint         # ESLint check
 ```
 
 ---
 
-## 📱 Web & Mobile Architecture Notes
+## 👥 Team
 
-This boilerplate is intentionally structured as a **universal foundation** for both web and native mobile (via React Native / Expo) targets.
-
-| Concern | Web (This Repo) | Mobile (Future) |
+| Name | Role | Domain |
 |---|---|---|
-| **Auth** | Supabase cookie sessions | Supabase token + AsyncStorage |
-| **Realtime** | Supabase Realtime channels | Supabase Realtime channels |
-| **AI Calls** | Via `/api/ai/parse` route | Same endpoint (REST) |
-| **UI Components** | shadcn/ui + Tailwind | NativeWind + RN equivalents |
-| **Navigation** | Next.js App Router | React Navigation |
-| **Storage** | Supabase Storage (URLs) | Same (shared bucket) |
-
-**Key design decisions that keep mobile in mind:**
-- All AI and data logic lives in `services/` — portable, framework-agnostic.
-- All database types live in `types/database.ts` — shareable with a mobile workspace.
-- API routes in `app/api/` act as a backend for both web and mobile clients.
-- No UI logic in `lib/` or `services/` — clean separation of concerns.
-
----
-
-## 👥 Team Roles & Ownership
-
-| Name | Role | Primary Domain | Do Not Touch |
-|---|---|---|---|
-| **Abhishek** | Lead Maintainer / AI Architect | `services/ai/`, PR reviews, system architecture, merges | — |
-| **Kiran** | Database / Backend Schema | `lib/supabase/`, `types/database.ts`, Supabase migrations, RLS policies | `services/ai/` |
-| **Arjun** | UI/UX Components | `components/shared/`, `app/**/page.tsx` layouts, Tailwind theming | `app/api/` |
-| **Chethan** | API Integration / Frontend Wiring | `app/api/`, `services/integrations/`, data-fetching hooks | `lib/supabase/` |
-
----
-
-## 🌿 Git Branching Strategy
-
-### Branch Hierarchy
-
-```
-main            ← 🚨 PRODUCTION. Auto-deploys to Vercel. No direct pushes. Ever.
-  └── dev       ← 🔀 STAGING. All PRs target this branch. Merged to main for releases.
-        ├── feature/abhishek-groq-agent
-        ├── feature/kiran-auth-schema
-        ├── feature/arjun-navbar
-        └── feature/chethan-api-wiring
-```
-
-### ⚠️ Cardinal Rules
-
-1. **`main` is sacred.** Only Abhishek merges `dev` → `main` for a release cut. No exceptions.
-2. **`dev` is staging.** Never push to `dev` directly. All changes arrive via Pull Request.
-3. **Always branch from `dev`.** Before creating your branch, run `git pull origin dev`.
-4. **Branch naming:** `feature/<your-name>-<short-description>` — e.g. `feature/arjun-sidebar-nav`.
-5. **Commit often.** Micro-commits with clear messages beat giant end-of-session dumps.
-
-### Pull Request Workflow
-
-```
-1. Push your feature branch to GitHub.
-2. Open a PR: your-branch → dev (NOT main).
-3. Verify the Vercel Preview deployment is green.
-4. Assign Abhishek as reviewer.
-5. Fix any review comments → push to same branch.
-6. Abhishek approves & squash-merges into dev.
-```
-
-> 🔥 **Before every PR:** Pull `dev` into your branch locally and fix any conflicts first.
-> See `git-cheatsheet.txt` for the exact 7-step sync sequence.
+| **Abhishek** | Lead / AI Architect | AI services, system architecture, merges |
+| **Kiran** | Backend / Database | Supabase, auth, sessions, credit economy |
+| **Arjun** | UI/UX | Components, pages, Tailwind theming |
+| **Chethan** | API / Integration | API routes, WebRTC, data hooks |
 
 ---
 
 ## 🚀 Deployment
 
-| Branch | Environment | Trigger | URL |
-|---|---|---|---|
-| `main` | Production | Push / merge to main | `https://your-app.vercel.app` |
-| `dev` | Staging | Push / merge to dev | `https://your-app-git-dev-yourorg.vercel.app` |
-| `feature/*` | Preview | Every push to feature branch | Auto-generated per PR |
-
-**Build health rules:**
-- `npm run build` must succeed with zero errors locally before any push.
-- TypeScript errors (`tsc --noEmit`) = blocked PR. No exceptions.
-- ESLint errors (`npm run lint`) = blocked PR. Warnings are acceptable.
-- A red Vercel preview build on your PR must be fixed before review is requested.
+| Branch | Environment | URL |
+|---|---|---|
+| `main` | Production | Auto-deploys to Vercel |
+| `dev` | Staging | Preview deployment |
+| `feature/*` | Preview | Auto-generated per PR |
 
 ---
 
-## 🗺️ Hackathon Sprint Checklist
-
-Use this during the event to stay on track:
-
-```
-Hour 0–1   [ ] All teammates: clone repo, run dev server, confirm env vars work
-           [ ] Kiran: create Supabase project, define Skill, Credit, and Session schemas
-           [ ] Abhishek: finalize Groq AI matching prompt strategy, test /api/ai/match
-           [ ] Arjun: scaffold Find a Peer UI and Video Room UI
-           [ ] Chethan: set up PeerJS/WebRTC signaling foundation
-
-Hour 1–6   [ ] Core feature loop working: Input Skill -> Groq AI Match -> Save to DB
-           [ ] Auth flow: signup -> email confirm -> dashboard redirect
-           [ ] Each member: open first PR to dev, Abhishek reviews & merges
-
-Hour 6–18  [ ] WebRTC Integration: Start a call, transmit video/audio between peers
-           [ ] Economy Logic: Deduct credit on joining call, add credit to teacher
-           [ ] Peer Rating System: Post-call modal to rate the peer
-           [ ] Mobile responsiveness pass (Arjun)
-
-Hour 18–23 [ ] Final PR: dev -> main (Abhishek)
-           [ ] Production Vercel URL confirmed green
-           [ ] Demo flow rehearsed (matching Python with Guitar -> Call -> Rate)
-
-Hour 24    [ ] Submission with production URL + GitHub repo link
-```
-
----
-
-## 📚 Key Reference Links
+## 📚 Key References
 
 | Resource | URL |
 |---|---|
 | Next.js App Router Docs | https://nextjs.org/docs/app |
 | Supabase Auth (SSR) | https://supabase.com/docs/guides/auth/server-side/nextjs |
-| Supabase JS Client | https://supabase.com/docs/reference/javascript |
-| shadcn/ui Components | https://ui.shadcn.com/docs/components |
+| Supabase Realtime | https://supabase.com/docs/guides/realtime |
 | Groq API Reference | https://console.groq.com/docs/openai |
-| Tailwind CSS v4 | https://tailwindcss.com/docs |
-| Vercel Deployment | https://vercel.com/docs/deployments/overview |
+| Tailwind CSS | https://tailwindcss.com/docs |
 | Lucide Icons | https://lucide.dev/icons |

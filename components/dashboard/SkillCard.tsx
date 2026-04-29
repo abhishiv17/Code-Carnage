@@ -76,7 +76,7 @@ export function SkillCard({ listing }: SkillCardProps) {
             {listing.availability}
           </span>
         </div>
-        <Link href={ROUTES.matches}>
+        <Link href={ROUTES.matches} className="relative z-10">
           <GradientButton size="sm">Connect</GradientButton>
         </Link>
       </div>

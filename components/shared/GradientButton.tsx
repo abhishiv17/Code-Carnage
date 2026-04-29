@@ -23,7 +23,7 @@ export function GradientButton({
   return (
     <button
       className={cn(
-        'relative font-heading font-semibold rounded-xl transition-all duration-300 inline-flex items-center justify-center gap-2 tracking-wide',
+        'relative z-10 font-heading font-semibold rounded-xl transition-all duration-300 inline-flex items-center justify-center gap-2 tracking-wide',
         sizeMap[size],
         variant === 'primary' && [
           'bg-gradient-to-r from-accent-matcha to-accent-slate',

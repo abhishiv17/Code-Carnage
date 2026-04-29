@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { SkillBadge } from '@/components/shared/SkillBadge';
-import { ArrowRightLeft, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowRightLeft, Sparkles, Loader2, CheckCircle2, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import Link from 'next/link';
-import { ROUTES } from '@/lib/constants';
 
 interface MatchResult {
+  peer_id: string;
   username: string;
   offered_skill: string;
   compatibility_score: number;
@@ -23,6 +22,8 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [requestingSession, setRequestingSession] = useState<string | null>(null);
+  const [requestedSessions, setRequestedSessions] = useState<Set<string>>(new Set());
 
   const desiredSkills = skills.filter((s) => s.type === 'desired');
 
@@ -34,30 +35,42 @@ export default function MatchesPage() {
 
     setLoading(true);
     setMatches([]);
+    setRequestedSessions(new Set());
 
     try {
-      // Call the AI match endpoint for each desired skill
       const allMatches: MatchResult[] = [];
+      let hasError = false;
 
       for (const skill of desiredSkills) {
-        const res = await fetch('/api/ai/match', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ desiredSkill: skill.skill_name }),
-        });
+        try {
+          const res = await fetch('/api/ai/match', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ desiredSkill: skill.skill_name }),
+          });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.matches) {
-            allMatches.push(...data.matches);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.matches && Array.isArray(data.matches)) {
+              allMatches.push(...data.matches);
+            }
+          } else {
+            const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
+            console.error(`Match API error for ${skill.skill_name}:`, errData);
+            toast.error(`Error matching "${skill.skill_name}": ${errData.error || res.statusText}`);
+            hasError = true;
           }
+        } catch (fetchErr) {
+          console.error(`Network error for ${skill.skill_name}:`, fetchErr);
+          toast.error(`Network error while searching for "${skill.skill_name}"`);
+          hasError = true;
         }
       }
 
-      // Deduplicate by username + skill
+      // Deduplicate by peer_id + skill
       const seen = new Set<string>();
       const unique = allMatches.filter((m) => {
-        const key = `${m.username}-${m.offered_skill}`;
+        const key = `${m.peer_id || m.username}-${m.offered_skill}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -67,10 +80,49 @@ export default function MatchesPage() {
       unique.sort((a, b) => b.compatibility_score - a.compatibility_score);
       setMatches(unique);
       setSearched(true);
+
+      if (unique.length > 0) {
+        toast.success(`Found ${unique.length} match${unique.length > 1 ? 'es' : ''}!`);
+      } else if (!hasError) {
+        toast.info('No matches found yet. More users need to join and offer skills!');
+      }
     } catch (err) {
+      console.error('Find matches error:', err);
       toast.error('Failed to find matches. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const requestSession = async (match: MatchResult) => {
+    if (!match.peer_id) {
+      toast.error('Unable to identify this user. Please try finding matches again.');
+      return;
+    }
+
+    const matchKey = `${match.peer_id}-${match.offered_skill}`;
+    setRequestingSession(matchKey);
+
+    try {
+      const res = await fetch('/api/sessions/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherId: match.peer_id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to create session');
+        return;
+      }
+
+      toast.success(`Session requested with ${match.username}! They'll be notified.`);
+      setRequestedSessions((prev) => new Set(prev).add(matchKey));
+    } catch (err) {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setRequestingSession(null);
     }
   };
 
@@ -114,25 +166,34 @@ export default function MatchesPage() {
 
       {/* Results */}
       {loading && (
-        <div className="flex justify-center py-12">
-          <Loader2 size={24} className="animate-spin text-accent-violet" />
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <Loader2 size={28} className="animate-spin text-accent-violet" />
+          <p className="text-sm text-[var(--text-muted)] animate-pulse">
+            AI is analyzing skill compatibility...
+          </p>
         </div>
       )}
 
       {!loading && searched && matches.length === 0 && (
-        <p className="text-center py-12 text-[var(--text-muted)]">
-          No matches found yet. More users joining will improve results!
-        </p>
+        <div className="text-center py-12">
+          <Sparkles size={32} className="mx-auto mb-3 text-[var(--text-muted)] opacity-20" />
+          <p className="text-[var(--text-muted)]">
+            No matches found yet. More users joining will improve results!
+          </p>
+        </div>
       )}
 
       {!loading && matches.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {matches.map((match, idx) => {
             const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${match.username}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
-            // Find which desired skill this match corresponds to
             const wantedSkill = desiredSkills.find((s) =>
               match.reasoning?.toLowerCase().includes(s.skill_name.toLowerCase())
             )?.skill_name || desiredSkills[0]?.skill_name || '';
+
+            const matchKey = `${match.peer_id}-${match.offered_skill}`;
+            const isRequesting = requestingSession === matchKey;
+            const isRequested = requestedSessions.has(matchKey);
 
             return (
               <GlassCard key={`${match.username}-${match.offered_skill}-${idx}`} hover gradient className="relative overflow-hidden">
@@ -180,11 +241,25 @@ export default function MatchesPage() {
                 </p>
 
                 {/* Action */}
-                <Link href={ROUTES.sessions} className="block w-full">
-                  <GradientButton className="w-full" size="sm">
-                    Request Session
+                {isRequested ? (
+                  <div className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent-emerald/10 border border-accent-emerald/20 text-accent-emerald text-sm font-medium">
+                    <CheckCircle2 size={16} />
+                    Session Requested!
+                  </div>
+                ) : (
+                  <GradientButton
+                    className="w-full"
+                    size="sm"
+                    onClick={() => requestSession(match)}
+                    disabled={isRequesting}
+                  >
+                    {isRequesting ? (
+                      <><Loader2 size={14} className="animate-spin" /> Sending...</>
+                    ) : (
+                      <><Send size={14} /> Request Session</>
+                    )}
                   </GradientButton>
-                </Link>
+                )}
               </GlassCard>
             );
           })}

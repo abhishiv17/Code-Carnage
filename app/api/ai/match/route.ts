@@ -57,8 +57,12 @@ export async function POST(req: Request) {
       };
     });
 
-    // Call Groq AI
+    console.log(`[Match API] Searching "${desiredSkill}" — found ${availablePeers.length} peers offering skills`);
+
+    // Call Groq AI (with fallback to keyword matching)
     const matchResults = await findMatches(desiredSkill, availablePeers);
+
+    console.log(`[Match API] Returning ${matchResults?.matches?.length ?? 0} matches`);
 
     return NextResponse.json(matchResults);
   } catch (error: any) {
