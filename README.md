@@ -26,27 +26,31 @@
 - [x] Session-based auth with middleware protection
 - [x] Guided onboarding flow (skill selection + profile setup)
 
-### 📊 Dashboard
+### 📊 Dashboard & Community
 - [x] **Marketplace** — Browse and discover skill listings from other students
 - [x] **AI Matches** — Groq-powered AI matching engine finds compatible skill-swap partners
+- [x] **Campus Help Board** — Public feed where students can post urgent bounties for help in exchange for credits
 - [x] **Sessions** — View pending, active, and completed sessions
-- [x] **Profile** — Full profile editor with academic info, social links, and preferences
+- [x] **Rich Portfolios** — Full profile editor with academic info, GitHub, LinkedIn, and portfolio links
+- [x] **Gamification & Endorsements** — Endorse your peers for specific skills to award them shiny badges on their profiles
 - [x] **Reviews** — Rate and review your peers after sessions
 - [x] **Leaderboard** — Top contributors ranked by sessions, ratings, and credits
 
 ### 🤖 AI-Powered Features
 - [x] **Smart Matchmaker** — AI recommends specific peers based on skills, college, city, and preferences
-- [x] **AI Chatbot** — Floating assistant powered by Groq (Llama 3.1) for:
+- [x] **Persistent AI Chatbot** — Floating assistant powered by Groq (Llama 3.1) with database persistence for:
+  - [x] "Quiz Me" interactive mode for test preparation
+  - [x] Native file handling (upload images and documents directly to the AI)
+  - [x] Multi-lingual support for regional languages
   - [x] Finding skill matches ("Who can teach me React?")
   - [x] Platform guidance ("How do credits work?")
-  - [x] Pre-session prep ("Give me a crash course on Python")
-  - [x] Icebreaker generation for shy students
 
-### 🔔 Real-Time Notifications
-- [x] Supabase Realtime-powered live notification system
-- [x] Instant alerts when someone requests a session with you
-- [x] Notification dropdown with mark-as-read and clear-all actions
-- [x] Type-based icons and relative timestamps
+### 💬 Real-Time Messaging & Notifications
+- [x] **Direct Messaging** — Peer-to-peer chat interface to coordinate sessions
+- [x] **Live Presence** — Online status indicators (green dots) for active users via Supabase Presence
+- [x] **Read Receipts** — "Read" ticks for sent messages
+- [x] **File & Voice Sharing** — Attach documents or record voice memos directly in the chat
+- [x] **Live Notifications** — Instant alerts when someone requests a session with you
 
 ### 💰 Credit Economy
 - [x] Start with 10 credits
