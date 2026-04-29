@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { GlassCard } from '@/components/shared/GlassCard';
 import {
   Trophy,
@@ -15,6 +16,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface LeaderboardEntry {
   id: string;
@@ -58,13 +60,11 @@ const podiumColors = [
 ];
 
 export default function LeaderboardPage() {
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      const supabase = createClient();
-
+  const { data: entries = [], isLoading: loading } = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, full_name, college_name, city, credits, average_rating, total_sessions')
@@ -73,14 +73,15 @@ export default function LeaderboardPage() {
         .order('credits', { ascending: false })
         .limit(50);
 
-      if (!error && data) {
-        setEntries(data as LeaderboardEntry[]);
+      if (error) {
+        console.error('Failed to fetch leaderboard:', error);
+        toast.error('Failed to load leaderboard');
+        throw error;
       }
-      setLoading(false);
-    };
-
-    fetchLeaderboard();
-  }, []);
+      return (data || []) as LeaderboardEntry[];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   if (loading) {
     return (
@@ -144,7 +145,7 @@ export default function LeaderboardPage() {
                 <div className={cn('w-20 h-20 rounded-full overflow-hidden ring-4 mb-4 mt-2 bg-[var(--bg-surface-solid)]', style.ring)}>
                   <Image
                     src={avatarUrl}
-                    alt={entry.username}
+                    alt={entry.username || 'User avatar'}
                     width={80}
                     height={80}
                     className="w-full h-full object-cover"
@@ -226,7 +227,7 @@ export default function LeaderboardPage() {
                         <div className="flex items-center gap-3">
                           <Image
                             src={avatarUrl}
-                            alt={entry.username}
+                            alt={entry.username || 'User avatar'}
                             width={32}
                             height={32}
                             className="w-8 h-8 rounded-full bg-[var(--bg-surface-solid)]"

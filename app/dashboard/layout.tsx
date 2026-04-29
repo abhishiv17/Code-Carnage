@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,7 +35,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       <div className="ml-[240px] transition-all duration-300">
         <TopBar />
-        <main className="p-6">{children}</main>
+        <main className="p-6 animate-page-in">
+          {children}
+        </main>
       </div>
       {/* Floating AI Chatbot */}
       <ChatbotWidget />

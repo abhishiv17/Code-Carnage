@@ -34,13 +34,13 @@ export function Hero() {
 
       <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
         {/* Social proof — minimal, no card */}
-        <p className="stagger-in text-[13px] font-medium text-[var(--text-muted)] tracking-widest uppercase mb-10">
+        <p className="text-[13px] font-medium text-[var(--text-muted)] tracking-widest uppercase mb-10">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-matcha mr-2 align-middle" />
           2,847 students swapping skills
         </p>
 
         {/* Hero heading — big, warm */}
-        <h1 className="stagger-in font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold leading-[0.92] tracking-[-0.03em] mb-7">
+        <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold leading-[0.92] tracking-[-0.03em] mb-7">
           <span className="text-[var(--text-primary)]">Swap Skills,</span>
           <br />
           <span className="gradient-text">Not Cash.</span>

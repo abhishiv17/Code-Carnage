@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
@@ -9,6 +10,7 @@ import { SkillBadge } from '@/components/shared/SkillBadge';
 import { Calendar, Clock, Coins, Video, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface SessionRow {
   id: string;
@@ -25,40 +27,50 @@ interface ProfileMap {
 
 export default function SessionsPage() {
   const { user } = useUser();
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
-  const [profiles, setProfiles] = useState<ProfileMap>({});
-  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchSessions = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['sessions', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('sessions')
         .select('*')
-        .or(`teacher_id.eq.${user.id},learner_id.eq.${user.id}`)
+        .or(`teacher_id.eq.${user!.id},learner_id.eq.${user!.id}`)
         .order('created_at', { ascending: false });
 
+      if (error) {
+        console.error('Failed to fetch sessions:', error);
+        toast.error('Failed to load sessions');
+        throw error;
+      }
+
+      let profileMap: ProfileMap = {};
       if (data && data.length > 0) {
-        setSessions(data);
         // Fetch profiles for all peer IDs
         const peerIds = Array.from(new Set(
-          data.flatMap((s) => [s.teacher_id, s.learner_id]).filter((id) => id !== user.id)
+          data.flatMap((s) => [s.teacher_id, s.learner_id]).filter((id) => id !== user!.id)
         ));
         if (peerIds.length > 0) {
-          const { data: profilesData } = await supabase
+          const { data: profilesData, error: profilesError } = await supabase
             .from('profiles')
             .select('id, username')
             .in('id', peerIds);
-          const map: ProfileMap = {};
-          profilesData?.forEach((p) => { map[p.id] = { username: p.username }; });
-          setProfiles(map);
+          
+          if (profilesError) {
+             console.error('Failed to fetch peer profiles:', profilesError);
+          }
+            
+          profilesData?.forEach((p) => { profileMap[p.id] = { username: p.username }; });
         }
       }
-      setLoading(false);
-    };
-    fetchSessions();
-  }, [user]);
+      return { sessions: (data || []) as SessionRow[], profiles: profileMap };
+    },
+    staleTime: 60 * 1000, // 1 minute
+  });
+
+  const sessions = data?.sessions || [];
+  const profiles = data?.profiles || {};
 
   const upcoming = sessions.filter((s) => s.status === 'pending' || s.status === 'active');
   const completed = sessions.filter((s) => s.status === 'completed');

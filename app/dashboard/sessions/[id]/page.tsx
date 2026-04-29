@@ -9,6 +9,7 @@ import { GlassCard } from '@/components/shared/GlassCard';
 import { Video, VideoOff, Mic, MicOff, PhoneOff, Monitor, MessageSquare, Clock, Maximize2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
+import { toast } from 'sonner';
 
 export default function VideoRoomPage() {
   const { id } = useParams();
@@ -23,11 +24,16 @@ export default function VideoRoomPage() {
     if (!user || !id) return;
     const fetchSession = async () => {
       const supabase = createClient();
-      const { data: session } = await supabase
+      const { data: session, error: sessionErr } = await supabase
         .from('sessions')
         .select('*')
         .eq('id', id)
         .single();
+
+      if (sessionErr) {
+        console.error('Failed to fetch session:', sessionErr);
+        toast.error('Failed to load session details');
+      }
 
       if (session) {
         const teaching = session.teacher_id === user.id;

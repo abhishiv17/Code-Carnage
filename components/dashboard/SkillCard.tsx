@@ -18,7 +18,7 @@ export function SkillCard({ listing }: SkillCardProps) {
       <div className="flex items-center gap-3 mb-4">
         <Image
           src={listing.user.avatar}
-          alt={listing.user.name}
+          alt={listing.user.name || 'User avatar'}
           width={40}
           height={40}
           className="w-10 h-10 rounded-full bg-[var(--bg-surface-solid)]"

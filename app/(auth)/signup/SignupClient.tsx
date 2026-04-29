@@ -74,7 +74,8 @@ export default function SignupPage() {
       setLoading(false);
     } else {
       toast.success('Account created! Let\'s set up your skills.');
-      router.push(ROUTES.onboarding);
+      router.refresh();
+      window.location.href = ROUTES.onboarding;
     }
   };
 

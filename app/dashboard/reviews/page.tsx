@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
@@ -26,49 +27,61 @@ interface ProfileMap {
 
 export default function ReviewsPage() {
   const { user } = useUser();
-  const [receivedReviews, setReceivedReviews] = useState<ReviewRow[]>([]);
-  const [givenReviews, setGivenReviews] = useState<ReviewRow[]>([]);
-  const [profiles, setProfiles] = useState<ProfileMap>({});
-  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['reviews', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [{ data: received, error: receivedErr }, { data: given, error: givenErr }] = await Promise.all([
+        supabase.from('reviews').select('*').eq('reviewee_id', user!.id).order('created_at', { ascending: false }),
+        supabase.from('reviews').select('*').eq('reviewer_id', user!.id).order('created_at', { ascending: false }),
+      ]);
+
+      if (receivedErr || givenErr) {
+        console.error('Failed to fetch reviews:', receivedErr || givenErr);
+        toast.error('Failed to load reviews');
+        throw receivedErr || givenErr;
+      }
+
+      const allReviews = [...(received || []), ...(given || [])];
+      let profileMap: ProfileMap = {};
+
+      // Fetch profiles
+      const userIds = Array.from(new Set(
+        allReviews.flatMap((r) => [r.reviewer_id, r.reviewee_id]).filter((id) => id !== user!.id)
+      ));
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesErr } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', userIds);
+        
+        if (profilesErr) {
+           console.error('Failed to fetch profiles:', profilesErr);
+        }
+
+        profilesData?.forEach((p) => { profileMap[p.id] = { username: p.username }; });
+      }
+
+      return {
+        received: (received || []) as ReviewRow[],
+        given: (given || []) as ReviewRow[],
+        profiles: profileMap,
+      };
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const receivedReviews = data?.received || [];
+  const givenReviews = data?.given || [];
+  const profiles = data?.profiles || {};
 
   // New review form state
   const [newRating, setNewRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetchReviews = async () => {
-      const supabase = createClient();
-
-      const [{ data: received }, { data: given }] = await Promise.all([
-        supabase.from('reviews').select('*').eq('reviewee_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('reviews').select('*').eq('reviewer_id', user.id).order('created_at', { ascending: false }),
-      ]);
-
-      const allReviews = [...(received || []), ...(given || [])];
-      setReceivedReviews(received || []);
-      setGivenReviews(given || []);
-
-      // Fetch profiles
-      const userIds = Array.from(new Set(
-        allReviews.flatMap((r) => [r.reviewer_id, r.reviewee_id]).filter((id) => id !== user.id)
-      ));
-      if (userIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .in('id', userIds);
-        const map: ProfileMap = {};
-        profilesData?.forEach((p) => { map[p.id] = { username: p.username }; });
-        setProfiles(map);
-      }
-
-      setLoading(false);
-    };
-    fetchReviews();
-  }, [user]);
 
   const handleSubmitReview = async () => {
     if (newRating === 0) {
@@ -82,6 +95,7 @@ export default function ReviewsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          sessionId: 'placeholder-session-id', // TODO: User needs to select a session
           rating: newRating,
           feedback: feedback || 'Great session!',
         }),

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Sora, DM_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
+import { UserProvider } from '@/hooks/useUser';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -32,24 +33,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning className={`${sora.variable} ${dmSans.variable}`}>
       <body className="font-body antialiased" suppressHydrationWarning>
         <QueryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem={true}
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                style: {
-                  background: 'var(--bg-cream)',
-                  border: '1px solid var(--border-soft)',
-                  color: 'var(--text-primary)',
-                },
-              }}
-            />
-          </ThemeProvider>
+          <UserProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem={true}
+            >
+              {children}
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  style: {
+                    background: 'var(--bg-cream)',
+                    border: '1px solid var(--border-soft)',
+                    color: 'var(--text-primary)',
+                  },
+                }}
+              />
+            </ThemeProvider>
+          </UserProvider>
         </QueryProvider>
       </body>
     </html>

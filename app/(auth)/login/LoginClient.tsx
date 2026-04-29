@@ -60,7 +60,8 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       toast.success('Welcome back!');
-      router.push(ROUTES.dashboard);
+      router.refresh();
+      window.location.href = ROUTES.dashboard;
     }
   };
 

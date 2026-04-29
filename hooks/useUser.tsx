@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, createContext, useContext } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -43,13 +43,16 @@ interface UseUserReturn {
   refreshProfile: () => Promise<void>;
 }
 
-export function useUser(): UseUserReturn {
+const UserContext = createContext<UseUserReturn | null>(null);
+
+export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
+  // We only want to instantiate the client once per provider lifecycle
+  const [supabase] = useState(() => createClient());
 
   const fetchProfile = useCallback(async (userId: string) => {
     const [{ data: profileData }, { data: skillsData }] = await Promise.all([
@@ -59,7 +62,7 @@ export function useUser(): UseUserReturn {
 
     if (profileData) setProfile(profileData as UserProfile);
     if (skillsData) setSkills(skillsData as UserSkill[]);
-  }, []);
+  }, [supabase]);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) await fetchProfile(user.id);
@@ -68,12 +71,13 @@ export function useUser(): UseUserReturn {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        // Use getSession() for instant local read (no network call)
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (error) console.error("Auth error:", error);
         
-        if (authUser) {
-          setUser(authUser);
-          await fetchProfile(authUser.id);
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id);
         }
       } catch (err) {
         console.error("Failed to initialize user:", err);
@@ -109,7 +113,19 @@ export function useUser(): UseUserReturn {
     setUser(null);
     setProfile(null);
     setSkills([]);
-  }, []);
+  }, [supabase.auth]);
 
-  return { user, profile, skills, loading, signOut, refreshProfile };
+  return (
+    <UserContext.Provider value={{ user, profile, skills, loading, signOut, refreshProfile }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+export function useUser(): UseUserReturn {
+  const context = useContext(UserContext);
+  if (context === null) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
 }
