@@ -9,6 +9,7 @@ import { GradientButton } from '@/components/shared/GradientButton';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import { Calendar, Clock, Coins, Video, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -26,6 +27,7 @@ interface ProfileMap {
 }
 
 export default function SessionsPage() {
+  const router = useRouter();
   const { user } = useUser();
   const supabase = createClient();
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
@@ -104,7 +106,7 @@ export default function SessionsPage() {
     };
   }, [user, refetch]);
 
-  const handleAcceptSession = async (sessionId: string) => {
+  const handleAcceptSession = async (sessionId: string, peerName: string) => {
     setAcceptingId(sessionId);
     try {
       const res = await fetch('/api/sessions/accept', {
@@ -117,8 +119,9 @@ export default function SessionsPage() {
         toast.error(resData.error || 'Failed to accept session');
         return;
       }
-      toast.success('Session accepted! You can now join the call.');
+      toast.success('Session accepted! Joining call...');
       refetch();
+      window.location.href = `/session/room_${sessionId}_${peerName}`;
     } catch (err) {
       toast.error('Network error. Please try again.');
     } finally {
@@ -165,7 +168,7 @@ export default function SessionsPage() {
               const date = new Date(session.created_at);
 
               return (
-                <GlassCard key={session.id} hover className="flex items-center gap-5">
+                <GlassCard key={session.id} elevation="raised" className="flex items-center gap-5">
                   <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-accent-violet/10 border border-accent-violet/20 shrink-0">
                     <span className="text-xs font-semibold text-accent-violet uppercase">
                       {date.toLocaleDateString('en-US', { month: 'short' })}
@@ -208,27 +211,30 @@ export default function SessionsPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 relative z-[100] pointer-events-auto cursor-default">
                     <Link
                       href={`/dashboard/messages?peerId=${peerId}`}
-                      className="px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-accent-violet hover:bg-accent-violet/10 rounded-xl transition-colors border border-[var(--glass-border)] bg-[var(--glass-bg)]"
+                      className="relative z-[110] pointer-events-auto px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-accent-violet hover:bg-accent-violet/10 rounded-xl transition-colors border border-[var(--glass-border)] bg-[var(--glass-bg)]"
                     >
                       <MessageSquare size={14} />
                       Message
                     </Link>
 
                     {session.status === 'active' && (
-                      <GradientButton asChild size="sm">
-                        <Link href={`/dashboard/sessions/${session.id}`}>
-                          <Video size={14} />
-                          Join
-                        </Link>
+                      <GradientButton 
+                        size="sm"
+                        className="relative z-[110] pointer-events-auto"
+                        onClick={() => { window.location.href = `/session/room_${session.id}_${peerName}`; }}
+                      >
+                        <Video size={14} />
+                        Join
                       </GradientButton>
                     )}
                     {session.status === 'pending' && isTeaching && (
                       <GradientButton 
                         size="sm" 
-                        onClick={() => handleAcceptSession(session.id)}
+                        className="relative z-[110] pointer-events-auto"
+                        onClick={() => handleAcceptSession(session.id, peerName)}
                         disabled={acceptingId === session.id}
                       >
                         {acceptingId === session.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}

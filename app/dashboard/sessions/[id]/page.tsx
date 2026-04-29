@@ -37,6 +37,27 @@ export default function VideoRoomPage() {
   const [loading, setLoading] = useState(true);
   const [inLobby, setInLobby] = useState(true);
 
+  // ─── NEW: Redirect to immersive room ───
+  useEffect(() => {
+    if (user && sessionId) {
+      const fetchSessionInfo = async () => {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('sessions')
+          .select('*, profiles!teacher_id(username), profiles!learner_id(username)')
+          .eq('id', sessionId)
+          .single();
+        
+        if (data) {
+          const teaching = data.teacher_id === user.id;
+          const pName = teaching ? (data.profiles_learner_id as any)?.username : (data.profiles_teacher_id as any)?.username;
+          window.location.href = `/session/room_${sessionId}_${pName || 'Peer'}`;
+        }
+      };
+      fetchSessionInfo();
+    }
+  }, [user, sessionId]);
+
   /* Refs for <video> elements */
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);

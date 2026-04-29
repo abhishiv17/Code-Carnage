@@ -67,17 +67,18 @@ export function TopBar() {
         if (!notifications.find(n => n.id === notificationId)?.is_read) {
           markAsRead(notificationId);
         }
-        // Transition this notification to "Join Session" state
-        setAcceptedSessionIds(prev => new Set(prev).add(notificationId));
-        toast.success('Session accepted! Click "Join Session" to start.');
+        toast.success('Session accepted! Joining call...');
+        // Auto redirect to the call
+        window.location.href = `/session/room_${sessionId}_Peer`;
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data.error || 'Failed to accept session');
       }
-    } catch {
-      toast.error('Network error while accepting');
+    } catch (err) {
+      toast.error('Failed to accept session');
+    } finally {
+      setAcceptingId(null);
     }
-    setAcceptingId(null);
   };
 
   const handleDecline = (notificationId: string) => {
@@ -96,9 +97,8 @@ export function TopBar() {
   };
 
   const handleJoinSession = (notificationId: string, sessionId: string) => {
-    setShowNotifications(false);
     // Navigate to the WebRTC call room
-    router.push(`/call/${sessionId}?peer=Peer&skill=Skill Session`);
+    window.location.href = `/session/room_${sessionId}_Peer`;
   };
 
   useEffect(() => {

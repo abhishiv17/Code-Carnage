@@ -11,6 +11,7 @@ export const ROUTES = {
   profile: '/dashboard/profile',
   reviews: '/dashboard/reviews',
   leaderboard: '/dashboard/leaderboard',
+  notifications: '/dashboard/notifications',
 } as const;
 
 export const SKILL_CATEGORIES = [
