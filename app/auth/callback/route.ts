@@ -12,8 +12,43 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    console.error('Auth Callback Error (code):', error);
   }
 
-  // If something went wrong, redirect to login with error
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+  // Handle Magic Links via token_hash (New Supabase Default)
+  const token_hash = searchParams.get('token_hash');
+  const type = searchParams.get('type') as any;
+
+  if (token_hash && type) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+    console.error('Auth Callback Error (token_hash):', error);
+  }
+
+  // If neither code nor token_hash is in the query params, it might be an implicit flow (hash based).
+  // Return a client-side script to handle hash parsing.
+  return new NextResponse(
+    `
+    <html>
+      <head>
+        <script>
+          window.onload = function() {
+            var hash = window.location.hash;
+            if (hash && hash.includes('access_token=')) {
+              // The Supabase client on the login or dashboard page will parse this automatically.
+              window.location.replace('/dashboard' + hash);
+            } else {
+              window.location.replace('/login?error=auth_failed_invalid_link');
+            }
+          }
+        </script>
+      </head>
+      <body>Authenticating...</body>
+    </html>
+    `,
+    { headers: { 'Content-Type': 'text/html' } }
+  );
 }

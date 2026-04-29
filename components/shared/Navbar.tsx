@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { APP_NAME, ROUTES } from '@/lib/constants';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { LanguageSelector } from '@/components/shared/LanguageSelector';
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -35,8 +37,8 @@ export function Navbar() {
     >
       <div className="mx-auto max-w-5xl px-6 flex items-center justify-between">
         <Link href={ROUTES.home} className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-matcha to-accent-slate flex items-center justify-center transition-transform duration-300 group-hover:rotate-6">
-            <span className="text-white font-heading font-bold text-sm">S</span>
+          <div className="w-8 h-8 shrink-0 relative flex items-center justify-center overflow-hidden rounded-xl transition-transform duration-300 group-hover:rotate-6">
+            <Image src="/logo.png" alt="SkillSwap Logo" fill className="object-cover" />
           </div>
           <span className="font-heading font-bold text-lg text-[var(--text-primary)]">
             {APP_NAME}
@@ -52,6 +54,7 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
+          <LanguageSelector />
           <ThemeToggle />
           <Link href={ROUTES.login} prefetch={false}>
             <GradientButton variant="ghost" size="sm">Log in</GradientButton>

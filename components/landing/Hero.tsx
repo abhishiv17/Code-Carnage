@@ -49,7 +49,7 @@ export function Hero() {
         {/* Subheading */}
         <p className="stagger-in max-w-lg mx-auto text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed mb-12">
           You know Python. They know guitar. Teach what you have,
-          learn what you want — powered by AI matching.
+          learn what you want — powered by Smart Matchmaking, a Multi-Lingual AI Tutor, and Secure Messaging.
         </p>
 
         {/* CTAs */}

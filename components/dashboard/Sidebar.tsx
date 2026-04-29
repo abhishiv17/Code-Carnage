@@ -15,13 +15,19 @@ import {
   Trophy,
   LogOut,
   ChevronLeft,
+  MessageSquare,
+  Calendar,
+  FileQuestion
 } from 'lucide-react';
 import { useState } from 'react';
 
 const navItems = [
   { label: 'Marketplace', href: ROUTES.dashboard, icon: LayoutDashboard },
+  { label: 'Campus Feed', href: '/dashboard/feed', icon: FileQuestion },
   { label: 'Matches', href: ROUTES.matches, icon: Sparkles },
   { label: 'Sessions', href: ROUTES.sessions, icon: CalendarDays },
+  { label: 'Messages', href: ROUTES.messages, icon: MessageSquare },
+  { label: 'Calendar', href: ROUTES.calendar, icon: Calendar },
   { label: 'Profile', href: ROUTES.profile, icon: UserCircle },
   { label: 'Reviews', href: ROUTES.reviews, icon: Star },
   { label: 'Leaderboard', href: ROUTES.leaderboard, icon: Trophy },
@@ -43,8 +49,8 @@ export function Sidebar() {
     >
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5 px-5 py-5 border-b border-[var(--border-soft)] hover:bg-[var(--bg-surface)] transition-colors">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-matcha to-accent-slate flex items-center justify-center shrink-0">
-          <span className="text-white font-heading font-bold text-sm">S</span>
+        <div className="w-8 h-8 shrink-0 relative flex items-center justify-center overflow-hidden rounded-lg">
+          <Image src="/logo.png" alt="SkillSwap Logo" fill className="object-cover" />
         </div>
         {!collapsed && (
           <span className="font-heading font-bold text-base text-[var(--text-primary)] truncate">

@@ -1,12 +1,12 @@
 import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
 import { PLATFORM_STATS } from '@/lib/mock-data';
-import { UserPlus, Sparkles, Video, Star } from 'lucide-react';
+import { UserPlus, Sparkles, Video, Star, Users } from 'lucide-react';
 
 const steps = [
   { number: '01', icon: UserPlus, title: 'Create Your Profile', description: 'Sign up and list the skills you have and the skills you want to learn.', color: 'text-accent-matcha', bg: 'bg-section-sage' },
-  { number: '02', icon: Sparkles, title: 'Get AI Matches', description: 'Our engine finds compatible students — someone who teaches what you want, and wants what you teach.', color: 'text-accent-slate', bg: 'bg-section-surface' },
-  { number: '03', icon: Video, title: 'Jump Into a Session', description: 'Schedule a live video call. Teach one hour, learn one hour. Credits flow automatically.', color: 'text-accent-rose', bg: 'bg-section-rose' },
-  { number: '04', icon: Star, title: 'Rate & Grow', description: 'Leave a review, earn badges, and build your reputation as a trusted peer teacher.', color: 'text-accent-mustard', bg: 'bg-section-sand' },
+  { number: '02', icon: Sparkles, title: 'Get AI Matches & Prep', description: 'Our engine finds compatible students. Need extra prep? Ask the integrated AI tutor for help.', color: 'text-accent-slate', bg: 'bg-section-surface' },
+  { number: '03', icon: Users, title: 'Connect & Chat', description: 'Send a follow request. Once accepted, securely chat, share voice notes, and swap files.', color: 'text-accent-violet', bg: 'bg-section-sand' },
+  { number: '04', icon: Video, title: 'Jump Into a Session', description: 'Schedule a live video call. Teach one hour, learn one hour. Credits flow automatically.', color: 'text-accent-rose', bg: 'bg-section-rose' },
 ];
 
 const stats = [

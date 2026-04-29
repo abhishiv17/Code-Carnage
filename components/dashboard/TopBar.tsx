@@ -9,6 +9,7 @@ import { ROUTES } from '@/lib/constants';
 import { Search, Bell, Coins, UserPlus, Star, CalendarCheck, CheckCheck, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { LanguageSelector } from '@/components/shared/LanguageSelector';
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -39,25 +40,53 @@ function getNotificationIcon(type: string) {
 
 export function TopBar() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { profile } = useUser();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
 
+  // Handle Search Input
+  useEffect(() => {
+    if (searchQuery.trim().length > 1) {
+      setShowSearchDropdown(true);
+      const fetchResults = async () => {
+        setIsSearching(true);
+        const supabase = await import('@/lib/supabase/client').then(m => m.createClient());
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, college_name')
+          .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
+          .limit(5);
+        setSearchResults(data || []);
+        setIsSearching(false);
+      };
+      const timeoutId = setTimeout(fetchResults, 300); // Debounce
+      return () => clearTimeout(timeoutId);
+    } else {
+      setShowSearchDropdown(false);
+      setSearchResults([]);
+    }
+  }, [searchQuery]);
+
+  // Click outside handlers
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchDropdown(false);
+      }
     }
 
-    if (showNotifications) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showNotifications]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
@@ -65,19 +94,54 @@ export function TopBar() {
     <header className="sticky top-0 z-30 glass border-b border-[var(--glass-border)] px-6 py-3">
       <div className="flex items-center justify-between gap-4">
         {/* Search */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-md" ref={searchRef}>
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Search skills, students..."
+            placeholder="Search students by name or username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => { if(searchQuery.length > 1) setShowSearchDropdown(true) }}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
           />
+          
+          {/* Search Dropdown */}
+          {showSearchDropdown && (
+            <div className="absolute top-full mt-2 w-full glass bg-[var(--bg-surface)] border border-[var(--glass-border)] rounded-xl shadow-2xl overflow-hidden z-50">
+              {isSearching ? (
+                <div className="p-4 text-center text-[var(--text-muted)] text-sm">Searching...</div>
+              ) : searchResults.length > 0 ? (
+                <div className="flex flex-col">
+                  {searchResults.map((user) => (
+                    <Link 
+                      key={user.id} 
+                      href={`/dashboard/user/${user.id}`}
+                      onClick={() => setShowSearchDropdown(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-[var(--glass-bg)] border-b border-[var(--glass-border)] last:border-b-0 transition-colors"
+                    >
+                      <Image 
+                        src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username || user.id}&backgroundColor=b6e3f4,c0aede,d1d4f9`} 
+                        alt={user.username || 'User Avatar'} width={32} height={32} className="rounded-full bg-[var(--bg-surface-solid)]" 
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{user.full_name || user.username}</p>
+                        <p className="text-[10px] text-[var(--text-muted)] truncate">@{user.username} • {user.college_name}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-[var(--text-muted)] text-sm">No students found</div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right side */}
         <div className="flex items-center gap-3">
+          {/* Language Selector */}
+          <LanguageSelector />
+          
           {/* Theme toggle */}
           <ThemeToggle />
 

@@ -260,3 +260,39 @@
     border-radius: 3px;
   }
 }
+
+/* --- Google Translate UI Aggressive Overrides --- */
+iframe.goog-te-banner-frame, 
+.goog-te-banner-frame,
+.skiptranslate > iframe.goog-te-banner-frame { 
+  display: none !important; 
+  visibility: hidden !important; 
+}
+
+body { 
+  top: 0 !important; 
+  position: static !important; 
+}
+
+/* Hide the "Powered by Google" text */
+.goog-te-gadget { color: transparent !important; font-size: 0 !important; }
+.goog-te-gadget span { display: none !important; }
+.goog-te-gadget img { display: none !important; }
+
+/* Style the select dropdown */
+.goog-te-combo {
+  color: var(--text-primary) !important;
+  background: var(--bg-surface) !important;
+  border: none !important;
+  font-size: 0.75rem !important;
+  font-family: inherit !important;
+  outline: none !important;
+  cursor: pointer;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Hide iframe container */
+.skiptranslate iframe { display: none !important; visibility: hidden !important; }
+
+.translate-wrapper > div { display: flex !important; align-items: center !important; margin: 0 !important; }
