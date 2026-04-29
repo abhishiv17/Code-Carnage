@@ -23,14 +23,15 @@
 | Auth — Signup | `app/(auth)/signup/page.tsx` | 🔲 SCAFFOLD | Kiran |
 | Dashboard Page | `app/dashboard/page.tsx` | 🔲 SCAFFOLD | Arjun |
 | Dashboard Layout + Auth Guard | `app/dashboard/layout.tsx` | 🔲 SCAFFOLD | Kiran |
-| AI Matching Endpoint | `app/api/ai/match/route.ts` | 🔲 SCAFFOLD | Abhishek |
-| Groq Matching Agent | `services/ai/matchingAgent.ts` | 🔲 SCAFFOLD | Abhishek |
-| AI Prompts | `services/ai/prompts.ts` | 🔲 SCAFFOLD | Abhishek |
+| AI Matching Endpoint | `app/api/ai/match/route.ts` | ✅ DONE | Abhishek |
+| Groq Matching Agent | `services/ai/matchingAgent.ts` | ✅ DONE | Abhishek |
+| AI Prompts | `services/ai/prompts.ts` | ✅ DONE | Abhishek |
 | WebRTC Signaling | `services/webrtc/signaling.ts` | 🔲 SCAFFOLD | Chethan |
 | Video Call Room | `app/dashboard/sessions/[id]/page.tsx` | 🔲 SCAFFOLD | Arjun |
 | Navbar (Web + Mobile) | `components/shared/Navbar.tsx` | 🔲 SCAFFOLD | Arjun |
 | Footer | `components/shared/Footer.tsx` | 🔲 SCAFFOLD | Arjun |
-| Database Schema | `types/database.ts` | 🔲 SCAFFOLD | Kiran |
+| Database Schema | `types/database.ts` | ✅ DONE | Kiran |
+| Credit Economy Endpoint | `app/api/sessions/end/route.ts` | ✅ DONE | Kiran |
 | API Types | `types/api.ts` | 🔲 SCAFFOLD | Chethan |
 | App Constants | `lib/constants.ts` | 🔲 SCAFFOLD | All |
 | Supabase Client | `lib/supabase/client.ts` | ✅ DONE | Kiran |
