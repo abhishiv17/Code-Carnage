@@ -1,1 +1,17 @@
-export default function Home() { return <main><h1>Landing Page</h1></main>; }
+import { Navbar } from '@/components/shared/Navbar';
+import { Hero } from '@/components/landing/Hero';
+import { Features } from '@/components/landing/Features';
+import { HowItWorks } from '@/components/landing/HowItWorks';
+import { Footer } from '@/components/shared/Footer';
+
+export default function Home() {
+  return (
+    <main>
+      <Navbar />
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <Footer />
+    </main>
+  );
+}
