@@ -6,10 +6,11 @@ interface GlassCardProps {
   hover?: boolean;
   gradient?: boolean;
   elevation?: 'flat' | 'raised' | 'inset';
-  padding?: 'sm' | 'md' | 'lg';
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
 const paddingMap = {
+  none: '',
   sm: 'p-4',
   md: 'p-5 sm:p-6',
   lg: 'p-6 sm:p-8',

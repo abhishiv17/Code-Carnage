@@ -12,6 +12,7 @@ import {
   CalendarDays,
   UserCircle,
   Star,
+  Trophy,
   LogOut,
   ChevronLeft,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ const navItems = [
   { label: 'Sessions', href: ROUTES.sessions, icon: CalendarDays },
   { label: 'Profile', href: ROUTES.profile, icon: UserCircle },
   { label: 'Reviews', href: ROUTES.reviews, icon: Star },
+  { label: 'Leaderboard', href: ROUTES.leaderboard, icon: Trophy },
 ];
 
 export function Sidebar() {
@@ -77,7 +79,7 @@ export function Sidebar() {
 
       {/* User section */}
       <div className="px-3 py-4 border-t border-[var(--glass-border)]">
-        <div className={cn('flex items-center gap-3 px-2', collapsed && 'justify-center')}>
+        <Link href={ROUTES.profile} className={cn('flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-[var(--glass-bg)] transition-colors', collapsed && 'justify-center')}>
           <Image
             src={avatarUrl}
             alt={profile?.username || 'User'}
@@ -95,7 +97,7 @@ export function Sidebar() {
               </p>
             </div>
           )}
-        </div>
+        </Link>
         {!collapsed && (
           <button
             onClick={signOut}

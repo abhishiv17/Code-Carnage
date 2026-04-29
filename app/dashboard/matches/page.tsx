@@ -8,6 +8,8 @@ import { GradientButton } from '@/components/shared/GradientButton';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import { ArrowRightLeft, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
+import { ROUTES } from '@/lib/constants';
 
 interface MatchResult {
   username: string;
@@ -178,9 +180,11 @@ export default function MatchesPage() {
                 </p>
 
                 {/* Action */}
-                <GradientButton className="w-full" size="sm">
-                  Request Session
-                </GradientButton>
+                <Link href={ROUTES.sessions} className="block w-full">
+                  <GradientButton className="w-full" size="sm">
+                    Request Session
+                  </GradientButton>
+                </Link>
               </GlassCard>
             );
           })}

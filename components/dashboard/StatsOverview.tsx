@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
+import { ROUTES } from '@/lib/constants';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
 import { useUser } from '@/hooks/useUser';
@@ -37,6 +39,7 @@ export function StatsOverview() {
       icon: Coins,
       color: 'text-accent-amber',
       bgColor: 'bg-accent-amber/10',
+      href: ROUTES.dashboard,
     },
     {
       label: 'Sessions Done',
@@ -44,6 +47,7 @@ export function StatsOverview() {
       icon: BookOpen,
       color: 'text-accent-emerald',
       bgColor: 'bg-accent-emerald/10',
+      href: ROUTES.sessions,
     },
     {
       label: 'Upcoming',
@@ -51,6 +55,7 @@ export function StatsOverview() {
       icon: GraduationCap,
       color: 'text-accent-violet',
       bgColor: 'bg-accent-violet/10',
+      href: ROUTES.sessions,
     },
     {
       label: 'Rating',
@@ -60,6 +65,7 @@ export function StatsOverview() {
       bgColor: 'bg-accent-coral/10',
       decimals: 1,
       prefix: '⭐ ',
+      href: ROUTES.reviews,
     },
   ];
 
@@ -68,23 +74,25 @@ export function StatsOverview() {
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <GlassCard key={stat.label} padding="md" className="group hover:scale-[1.02] transition-transform duration-200">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
-                <Icon size={18} className={stat.color} />
+          <Link href={stat.href} key={stat.label}>
+            <GlassCard padding="md" className="group hover:scale-[1.02] transition-transform duration-200 h-full">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
+                  <Icon size={18} className={stat.color} />
+                </div>
+                <div>
+                  <p className="text-2xl font-heading font-bold text-[var(--text-primary)]">
+                    <AnimatedCounter
+                      target={stat.value}
+                      decimals={stat.decimals ?? 0}
+                      prefix={stat.prefix}
+                    />
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)]">{stat.label}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-heading font-bold text-[var(--text-primary)]">
-                  <AnimatedCounter
-                    target={stat.value}
-                    decimals={stat.decimals ?? 0}
-                    prefix={stat.prefix}
-                  />
-                </p>
-                <p className="text-xs text-[var(--text-muted)]">{stat.label}</p>
-              </div>
-            </div>
-          </GlassCard>
+            </GlassCard>
+          </Link>
         );
       })}
     </div>

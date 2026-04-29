@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
+import { ChatbotWidget } from '@/components/shared/ChatbotWidget';
 import { ROUTES } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 
@@ -35,6 +36,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <TopBar />
         <main className="p-6">{children}</main>
       </div>
+      {/* Floating AI Chatbot */}
+      <ChatbotWidget />
     </div>
   );
 }

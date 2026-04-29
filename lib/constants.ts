@@ -10,6 +10,7 @@ export const ROUTES = {
   sessions: '/dashboard/sessions',
   profile: '/dashboard/profile',
   reviews: '/dashboard/reviews',
+  leaderboard: '/dashboard/leaderboard',
 } as const;
 
 export const SKILL_CATEGORIES = [
