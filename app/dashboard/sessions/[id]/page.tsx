@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useUser';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { GlassCard } from '@/components/shared/GlassCard';
+import { GradientButton } from '@/components/shared/GradientButton';
 import {
   Video,
   VideoOff,
@@ -22,6 +23,8 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
+import Link from 'next/link';
+import { ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export default function VideoRoomPage() {
@@ -32,6 +35,7 @@ export default function VideoRoomPage() {
   const [peerName, setPeerName] = useState('Peer');
   const [isTeaching, setIsTeaching] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [inLobby, setInLobby] = useState(true);
 
   /* Refs for <video> elements */
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -85,6 +89,7 @@ export default function VideoRoomPage() {
     sessionId,
     userId: user?.id ?? '',
     isCaller: isTeaching,
+    startCall: !inLobby,
   });
 
   /* Bind local stream to <video> */
@@ -92,7 +97,7 @@ export default function VideoRoomPage() {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream]);
+  }, [localStream, inLobby]);
 
   /* Bind remote stream to <video> */
   useEffect(() => {
@@ -106,6 +111,43 @@ export default function VideoRoomPage() {
     remoteVideoRef.current?.requestFullscreen?.();
   }, []);
 
+  /* End Call Logic */
+  const handleEndCall = async () => {
+    // 1. Play hangup sound effect
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      }
+    } catch (e) {
+      // Ignore if browser blocks audio
+    }
+
+    // 2. Close WebRTC connections
+    hangUp();
+
+    // 3. Update session status in database to trigger the review flow
+    const supabase = createClient();
+    await supabase
+      .from('sessions')
+      .update({ status: 'completed', ended_at: new Date().toISOString() })
+      .eq('id', sessionId);
+
+    // 4. Redirect to reviews page for this specific session
+    router.push(`${ROUTES.reviews}?sessionId=${sessionId}`);
+  };
+
   /* Avatars (fallback when cam off / no stream) */
   const peerAvatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${peerName}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
   const myAvatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
@@ -116,6 +158,75 @@ export default function VideoRoomPage() {
     return (
       <div className="flex justify-center py-12">
         <Loader2 size={24} className="animate-spin text-accent-violet" />
+      </div>
+    );
+  }
+
+  if (inLobby) {
+    return (
+      <div className="flex flex-col items-center justify-center py-6 space-y-6">
+        <div className="text-center">
+          <h1 className="font-heading text-2xl font-bold text-[var(--text-primary)] mb-2">
+            Join Session with {peerName}
+          </h1>
+          <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
+            Please check your camera and microphone settings before joining the live room.
+          </p>
+        </div>
+
+        <div className="relative aspect-video w-full max-w-3xl rounded-2xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] overflow-hidden shadow-2xl">
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`absolute inset-0 w-full h-full object-cover mirror transition-opacity duration-300 ${
+              cameraOn ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+          {!cameraOn && (
+            <div className="absolute inset-0 bg-[var(--bg-deep)]/90 flex flex-col items-center justify-center">
+              <Image
+                src={myAvatar}
+                alt="You"
+                width={96}
+                height={96}
+                className="w-24 h-24 rounded-full mb-4 ring-4 ring-accent-violet/20"
+              />
+              <p className="text-lg font-medium text-[var(--text-secondary)]">
+                Camera is off
+              </p>
+            </div>
+          )}
+
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+            <button
+              onClick={toggleMic}
+              className={`p-4 rounded-2xl transition-all shadow-lg backdrop-blur-md ${
+                micOn
+                  ? 'bg-black/40 text-white hover:bg-black/60'
+                  : 'bg-red-500 text-white shadow-red-500/20 hover:bg-red-600'
+              }`}
+            >
+              {micOn ? <Mic size={24} /> : <MicOff size={24} />}
+            </button>
+
+            <button
+              onClick={toggleCamera}
+              className={`p-4 rounded-2xl transition-all shadow-lg backdrop-blur-md ${
+                cameraOn
+                  ? 'bg-black/40 text-white hover:bg-black/60'
+                  : 'bg-red-500 text-white shadow-red-500/20 hover:bg-red-600'
+              }`}
+            >
+              {cameraOn ? <Video size={24} /> : <VideoOff size={24} />}
+            </button>
+          </div>
+        </div>
+
+        <GradientButton size="lg" onClick={() => setInLobby(false)} className="px-12 py-6 text-lg mt-4 shadow-xl">
+          Join Room Now
+        </GradientButton>
       </div>
     );
   }
@@ -319,19 +430,7 @@ export default function VideoRoomPage() {
         {/* Hang up */}
         <button
           id="btn-hangup"
-          onClick={async () => {
-            hangUp();
-            try {
-              await fetch('/api/sessions/end', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId }),
-              });
-            } catch (err) {
-              console.error('Failed to end session:', err);
-            }
-            router.push(`/dashboard/reviews?sessionId=${sessionId}`);
-          }}
+          onClick={handleEndCall}
           className="p-4 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all"
         >
           <PhoneOff size={20} />

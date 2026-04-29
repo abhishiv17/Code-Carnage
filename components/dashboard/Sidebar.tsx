@@ -15,6 +15,7 @@ import {
   Trophy,
   LogOut,
   ChevronLeft,
+  MessageSquare,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -23,6 +24,7 @@ const navItems = [
   { label: 'Matches', href: ROUTES.matches, icon: Sparkles },
   { label: 'Sessions', href: ROUTES.sessions, icon: CalendarDays },
   { label: 'Profile', href: ROUTES.profile, icon: UserCircle },
+  { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
   { label: 'Reviews', href: ROUTES.reviews, icon: Star },
   { label: 'Leaderboard', href: ROUTES.leaderboard, icon: Trophy },
 ];

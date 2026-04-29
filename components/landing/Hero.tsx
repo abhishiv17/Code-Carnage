@@ -47,7 +47,7 @@ export function Hero() {
           2,847 students swapping skills
         </p>
 
-<<<<<<< HEAD
+
         {/* Hero heading with word-swap animation */}
         <h1 className="stagger-in font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold leading-[0.92] tracking-[-0.03em] mb-7">
           <span className="text-[var(--text-primary)] inline-flex items-baseline gap-[0.2em] overflow-visible relative">
@@ -93,11 +93,7 @@ export function Hero() {
               </span>
             )}
           </span>
-=======
-        {/* Hero heading — big, warm */}
-        <h1 className="font-heading text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold leading-[0.92] tracking-[-0.03em] mb-7">
-          <span className="text-[var(--text-primary)]">Swap Skills,</span>
->>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83
+
           <br />
           <span className="gradient-text">Not Cash.</span>
         </h1>

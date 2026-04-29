@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useUser } from '@/hooks/useUser';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ROUTES } from '@/lib/constants';
-import { Search, Bell, Coins, UserPlus, Star, CalendarCheck, CheckCheck, Trash2 } from 'lucide-react';
+import { Search, Bell, Coins, UserPlus, Star, CalendarCheck, CheckCheck, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -37,11 +39,41 @@ function getNotificationIcon(type: string) {
 }
 
 export function TopBar() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { profile } = useUser();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
+
+  const handleAccept = async (notificationId: string, sessionId: string) => {
+    setAcceptingId(sessionId);
+    try {
+      const res = await fetch('/api/sessions/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      if (res.ok) {
+        if (!notifications.find(n => n.id === notificationId)?.is_read) {
+          markAsRead(notificationId);
+        }
+        setShowNotifications(false);
+        router.push(`/dashboard/sessions/${sessionId}`);
+      } else {
+        toast.error('Failed to accept session');
+      }
+    } catch {
+      toast.error('Network error while accepting');
+    }
+    setAcceptingId(null);
+  };
+
+  const handleDecline = (notificationId: string) => {
+    markAsRead(notificationId);
+    toast.success('Session request declined');
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -143,24 +175,36 @@ export function TopBar() {
                     </div>
                   ) : (
                     notifications.map((notification) => (
-                      <Link
+                      <div
                         key={notification.id}
-                        href={notification.link || '#'}
                         onClick={() => {
                           if (!notification.is_read) markAsRead(notification.id);
-                          setShowNotifications(false);
+                          // Only close and navigate if it's not a session request with action buttons
+                          if (notification.type !== 'session_request') {
+                            setShowNotifications(false);
+                            if (notification.link) {
+                              router.push(notification.link.startsWith('/') ? notification.link : '/dashboard/sessions');
+                            }
+                          }
                         }}
                         className={cn(
-                          'flex items-start gap-3 px-4 py-3 hover:bg-[var(--glass-bg)] transition-colors border-b border-[var(--glass-border)] last:border-b-0',
+                          'flex items-start gap-3 px-4 py-3 hover:bg-[var(--glass-bg)] transition-colors border-b border-[var(--glass-border)] last:border-b-0 cursor-pointer',
                           !notification.is_read && 'bg-accent-violet/[0.03]'
                         )}
                       >
-                        {/* Icon */}
+                        {/* Avatar / Icon Placeholder */}
                         <div className={cn(
-                          'mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0',
+                          'mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden',
                           !notification.is_read ? 'bg-accent-violet/10' : 'bg-[var(--bg-surface-solid)]'
                         )}>
-                          {getNotificationIcon(notification.type)}
+                          {notification.type === 'session_request' ? (
+                             <Image 
+                               src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${notification.title}&backgroundColor=b6e3f4,c0aede,d1d4f9`} 
+                               alt="Avatar" width={32} height={32} 
+                             />
+                          ) : (
+                             getNotificationIcon(notification.type)
+                          )}
                         </div>
 
                         {/* Content */}
@@ -177,13 +221,41 @@ export function TopBar() {
                           <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
                             {timeAgo(notification.created_at)}
                           </p>
+
+                          {/* Action Buttons for Session Requests */}
+                          {notification.type === 'session_request' && notification.link && (
+                            <div className="flex items-center gap-2 mt-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAccept(notification.id, notification.link!);
+                                }}
+                                disabled={acceptingId === notification.link}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-violet text-white text-xs font-medium hover:bg-accent-violet/90 transition-all disabled:opacity-50"
+                              >
+                                {acceptingId === notification.link && <Loader2 size={12} className="animate-spin" />}
+                                Accept
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDecline(notification.id);
+                                }}
+                                disabled={acceptingId === notification.link}
+                                className="px-3 py-1.5 rounded-lg text-[var(--text-primary)] hover:bg-[var(--bg-surface-solid)] text-xs font-medium transition-all border border-[var(--glass-border)]"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
                         </div>
 
                         {/* Unread dot */}
                         {!notification.is_read && (
                           <span className="mt-2 w-2 h-2 rounded-full bg-accent-violet shrink-0" />
                         )}
-                      </Link>
+                      </div>
+
                     ))
                   )}
                 </div>

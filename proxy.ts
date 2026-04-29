@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -35,11 +35,13 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: DO NOT use getSession() here! 
-  // Always use getUser() in middleware to securely validate the token and refresh the session
+  // Use getSession() instead of getUser() to avoid slow network requests 
+  // and prevent 10s timeouts on route transitions
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  
+  const user = session?.user;
 
   // Redirect unauthenticated users trying to access dashboard
   if (

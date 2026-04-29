@@ -53,10 +53,10 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
-          <Link href={ROUTES.login} prefetch={false}>
+          <Link href={ROUTES.login} prefetch={true}>
             <GradientButton variant="ghost" size="sm">Log in</GradientButton>
           </Link>
-          <Link href={ROUTES.signup} prefetch={false}>
+          <Link href={ROUTES.signup} prefetch={true}>
             <GradientButton size="sm">Get Started</GradientButton>
           </Link>
         </div>
@@ -75,10 +75,10 @@ export function Navbar() {
             <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="text-sm text-[var(--text-secondary)] py-2 font-medium">{link.label}</a>
           ))}
           <hr className="border-[var(--border-soft)]" />
-          <Link href={ROUTES.login} prefetch={false} onClick={() => setMobileOpen(false)}>
+          <Link href={ROUTES.login} prefetch={true} onClick={() => setMobileOpen(false)}>
             <GradientButton variant="ghost" size="sm" className="w-full">Log in</GradientButton>
           </Link>
-          <Link href={ROUTES.signup} prefetch={false} onClick={() => setMobileOpen(false)}>
+          <Link href={ROUTES.signup} prefetch={true} onClick={() => setMobileOpen(false)}>
             <GradientButton size="sm" className="w-full">Get Started</GradientButton>
           </Link>
         </div>

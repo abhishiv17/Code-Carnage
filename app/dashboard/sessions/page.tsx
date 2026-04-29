@@ -7,7 +7,7 @@ import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { SkillBadge } from '@/components/shared/SkillBadge';
-import { Calendar, Clock, Coins, Video, CheckCircle2, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Coins, Video, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -27,44 +27,6 @@ interface ProfileMap {
 
 export default function SessionsPage() {
   const { user } = useUser();
-<<<<<<< HEAD
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
-  const [profiles, setProfiles] = useState<ProfileMap>({});
-  const [loading, setLoading] = useState(true);
-  const [acceptingId, setAcceptingId] = useState<string | null>(null);
-
-  const fetchSessions = async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('sessions')
-      .select('*')
-      .or(`teacher_id.eq.${user.id},learner_id.eq.${user.id}`)
-      .order('created_at', { ascending: false });
-
-    if (data && data.length > 0) {
-      setSessions(data);
-      // Fetch profiles for all peer IDs
-      const peerIds = Array.from(new Set(
-        data.flatMap((s) => [s.teacher_id, s.learner_id]).filter((id) => id !== user.id)
-      ));
-      if (peerIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .in('id', peerIds);
-        const map: ProfileMap = {};
-        profilesData?.forEach((p) => { map[p.id] = { username: p.username }; });
-        setProfiles(map);
-      }
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchSessions();
-  }, [user]);
-=======
   const supabase = createClient();
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
@@ -111,6 +73,37 @@ export default function SessionsPage() {
   const sessions = data?.sessions || [];
   const profiles = data?.profiles || {};
 
+  // Real-time subscription to auto-update sessions when requests are sent/accepted
+  useEffect(() => {
+    if (!user) return;
+    const realtimeSupabase = createClient();
+    
+    const channel = realtimeSupabase
+      .channel('sessions_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sessions' },
+        (payload) => {
+          const newRow = payload.new as Partial<SessionRow>;
+          const oldRow = payload.old as Partial<SessionRow>;
+          
+          if (
+            newRow?.teacher_id === user.id ||
+            newRow?.learner_id === user.id ||
+            oldRow?.teacher_id === user.id ||
+            oldRow?.learner_id === user.id
+          ) {
+            refetch();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      realtimeSupabase.removeChannel(channel);
+    };
+  }, [user, refetch]);
+
   const handleAcceptSession = async (sessionId: string) => {
     setAcceptingId(sessionId);
     try {
@@ -128,27 +121,6 @@ export default function SessionsPage() {
       refetch();
     } catch (err) {
       toast.error('Network error. Please try again.');
-    } finally {
-      setAcceptingId(null);
-    }
-  };
->>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83
-
-  const acceptSession = async (sessionId: string) => {
-    setAcceptingId(sessionId);
-    try {
-      const res = await fetch('/api/sessions/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
-      });
-      if (res.ok) {
-        await fetchSessions(); // Refresh list to show active status
-      } else {
-        console.error("Failed to accept session");
-      }
-    } catch (e) {
-      console.error(e);
     } finally {
       setAcceptingId(null);
     }
@@ -236,53 +208,40 @@ export default function SessionsPage() {
                       </span>
                     </div>
                   </div>
-
-                  {session.status === 'active' && (
-                    <GradientButton asChild size="sm">
-                      <Link href={`/dashboard/sessions/${session.id}`}>
-                        <Video size={14} />
-                        Join
-                      </Link>
-                    </GradientButton>
-                  )}
-<<<<<<< HEAD
-                  {session.status === 'pending' && isTeaching && (
-                    <GradientButton 
-                      size="sm" 
-                      onClick={() => acceptSession(session.id)}
-                      disabled={acceptingId === session.id}
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/dashboard/messages?peerId=${peerId}`}
+                      className="px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-accent-violet hover:bg-accent-violet/10 rounded-xl transition-colors border border-[var(--glass-border)] bg-[var(--glass-bg)]"
                     >
-                      {acceptingId === session.id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <CheckCircle2 size={14} />
-                      )}
-                      Accept
-                    </GradientButton>
-                  )}
-                  {session.status === 'pending' && !isTeaching && (
-                    <div className="text-xs text-[var(--text-muted)] italic px-2">
-                      Waiting for peer to accept...
-                    </div>
-=======
+                      <MessageSquare size={14} />
+                      Message
+                    </Link>
 
-                  {session.status === 'pending' && isTeaching && (
-                    <GradientButton 
-                      size="sm" 
-                      onClick={() => handleAcceptSession(session.id)}
-                      disabled={acceptingId === session.id}
-                    >
-                      {acceptingId === session.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                      Accept
-                    </GradientButton>
-                  )}
-                  
-                  {session.status === 'pending' && !isTeaching && (
-                    <span className="text-xs text-[var(--text-muted)] italic px-3 py-1.5 bg-[var(--bg-surface-solid)] rounded-lg border border-[var(--glass-border)]">
-                      Waiting...
-                    </span>
->>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83
-                  )}
+                    {session.status === 'active' && (
+                      <GradientButton asChild size="sm">
+                        <Link href={`/dashboard/sessions/${session.id}`}>
+                          <Video size={14} />
+                          Join
+                        </Link>
+                      </GradientButton>
+                    )}
+                    {session.status === 'pending' && isTeaching && (
+                      <GradientButton 
+                        size="sm" 
+                        onClick={() => handleAcceptSession(session.id)}
+                        disabled={acceptingId === session.id}
+                      >
+                        {acceptingId === session.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                        Accept
+                      </GradientButton>
+                    )}
+                    
+                    {session.status === 'pending' && !isTeaching && (
+                      <span className="text-xs text-[var(--text-muted)] italic px-3 py-1.5 bg-[var(--bg-surface-solid)] rounded-lg border border-[var(--glass-border)]">
+                        Waiting...
+                      </span>
+                    )}
+                  </div>
                 </GlassCard>
               );
             })}

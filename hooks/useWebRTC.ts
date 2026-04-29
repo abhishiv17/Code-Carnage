@@ -10,6 +10,7 @@ export interface UseWebRTCOptions {
   userId: string;
   /** true = this user creates the offer (caller) */
   isCaller: boolean;
+  startCall?: boolean;
 }
 
 export interface UseWebRTCReturn {
@@ -37,7 +38,7 @@ const RTC_CONFIG: RTCConfiguration = {
 };
 
 /* ─── Signaling message types ─── */
-type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'hangup' | 'hello' | 'welcome';
+type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'hangup';
 
 interface SignalPayload {
   type: SignalType;
@@ -50,11 +51,13 @@ export function useWebRTC({
   sessionId,
   userId,
   isCaller,
+  startCall = true,
 }: UseWebRTCOptions): UseWebRTCReturn {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
+  const supabaseRef = useRef(createClient());
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -63,8 +66,6 @@ export function useWebRTC({
   const [screenSharing, setScreenSharing] = useState(false);
   const [connectionState, setConnectionState] =
     useState<RTCPeerConnectionState | 'new'>('new');
-    
-  const hasCreatedOffer = useRef(false);
 
   /* ── helpers ── */
   const broadcast = useCallback(
@@ -78,35 +79,49 @@ export function useWebRTC({
     [],
   );
 
-  /* ── initialise media + peer connection ── */
+  /* ── 1. Acquire local media (always runs so lobby works) ── */
   useEffect(() => {
-    if (!sessionId || !userId) return;
+    let isMounted = true;
+    async function getMedia() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        if (!isMounted) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        localStreamRef.current = stream;
+        cameraTrackRef.current = stream.getVideoTracks()[0] ?? null;
+        setLocalStream(stream);
+      } catch (err) {
+        console.error('Failed to get local media', err);
+      }
+    }
+    getMedia();
+
+    return () => {
+      isMounted = false;
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  /* ── 2. Establish Peer Connection (only when startCall is true) ── */
+  useEffect(() => {
+    if (!sessionId || !userId || !startCall || !localStream) return;
 
     let isMounted = true;
-    const supabase = createClient();
+    const supabase = supabaseRef.current;
     const pendingCandidates: RTCIceCandidateInit[] = [];
 
-    async function init() {
-      /* 1. Get local media */
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      if (!isMounted) {
-        stream.getTracks().forEach((t) => t.stop());
-        return;
-      }
-      localStreamRef.current = stream;
-      cameraTrackRef.current =
-        stream.getVideoTracks()[0] ?? null;
-      setLocalStream(stream);
-
-      /* 2. Create peer connection */
+    async function initConnection() {
+      /* Create peer connection */
       const pc = new RTCPeerConnection(RTC_CONFIG);
       pcRef.current = pc;
 
       /* Add local tracks */
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      localStream!.getTracks().forEach((track) => pc.addTrack(track, localStream!));
 
       /* Remote stream */
       const remote = new MediaStream();
@@ -142,25 +157,6 @@ export function useWebRTC({
           if (msg.sender === userId) return; // ignore own
 
           try {
-            if (msg.type === 'hello') {
-              broadcast({ type: 'welcome', sender: userId, data: null });
-              if (isCaller && !hasCreatedOffer.current) {
-                hasCreatedOffer.current = true;
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-                broadcast({ type: 'offer', sender: userId, data: offer });
-              }
-            }
-
-            if (msg.type === 'welcome') {
-              if (isCaller && !hasCreatedOffer.current) {
-                hasCreatedOffer.current = true;
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-                broadcast({ type: 'offer', sender: userId, data: offer });
-              }
-            }
-
             if (msg.type === 'offer' && msg.data) {
               await pc.setRemoteDescription(
                 new RTCSessionDescription(msg.data as RTCSessionDescriptionInit),
@@ -206,27 +202,28 @@ export function useWebRTC({
           }
         })
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            broadcast({ type: 'hello', sender: userId, data: null });
+          if (status === 'SUBSCRIBED' && isCaller) {
+            // Caller creates the offer after channel ready
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            broadcast({ type: 'offer', sender: userId, data: offer });
           }
         });
 
       channelRef.current = channel;
     }
 
-    init().catch(console.error);
+    initConnection().catch(console.error);
 
     return () => {
       isMounted = false;
       pcRef.current?.close();
-      localStreamRef.current?.getTracks().forEach((t) => t.stop());
       if (channelRef.current) {
-        const supabase = createClient();
-        supabase.removeChannel(channelRef.current);
+        supabaseRef.current.removeChannel(channelRef.current);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, userId, isCaller]);
+  }, [sessionId, userId, isCaller, startCall, localStream]);
 
   /* ── toggle camera ── */
   const toggleCamera = useCallback(() => {

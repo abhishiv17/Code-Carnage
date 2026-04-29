@@ -1,11 +1,6 @@
 'use client';
 
-<<<<<<< HEAD:hooks/useUser.ts
-import { useEffect, useState, useCallback } from 'react';
-import { useMemo } from 'react';
-=======
-import { useEffect, useState, useCallback, createContext, useContext } from 'react';
->>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83:hooks/useUser.tsx
+import { useEffect, useState, useCallback, createContext, useContext, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 
@@ -81,12 +76,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [loading, setLoading] = useState(true);
 
-<<<<<<< HEAD:hooks/useUser.ts
   const supabase = useMemo(() => createClient(), []);
-=======
-  // We only want to instantiate the client once per provider lifecycle
-  const [supabase] = useState(() => createClient());
->>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83:hooks/useUser.tsx
 
   const fetchProfile = useCallback(async (userId: string) => {
     const [{ data: profileData }, { data: skillsData }] = await Promise.all([
@@ -103,28 +93,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id, fetchProfile]);
 
   useEffect(() => {
+    let isMounted = true;
     const init = async () => {
       try {
-<<<<<<< HEAD:hooks/useUser.ts
-        const authUser = await getSharedAuthUser(supabase);
+        // Add a 5-second timeout to prevent infinite loading if Supabase auth hangs
+        const authUser = await Promise.race([
+          getSharedAuthUser(supabase),
+          new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
+        ]);
 
-        if (authUser) {
+        if (isMounted && authUser) {
           setUser(authUser);
           await fetchProfile(authUser.id);
-=======
-        // Use getSession() for instant local read (no network call)
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) console.error("Auth error:", error);
-        
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
->>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83:hooks/useUser.tsx
         }
       } catch (err) {
         console.error("Failed to initialize user:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -157,11 +142,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setProfile(null);
     setSkills([]);
-<<<<<<< HEAD:hooks/useUser.ts
   }, [supabase]);
-=======
-  }, [supabase.auth]);
->>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83:hooks/useUser.tsx
 
   return (
     <UserContext.Provider value={{ user, profile, skills, loading, signOut, refreshProfile }}>

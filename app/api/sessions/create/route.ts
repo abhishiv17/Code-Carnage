@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         type: 'session_request',
         title: 'New Session Request!',
         message: `${learnerName} wants to learn from you.`,
-        link: '/dashboard/sessions',
+        link: session.id, // Store session ID here so we can Accept/Decline directly from the notification UI
       });
     } catch {
       // Notifications table may not exist yet — safe to ignore
