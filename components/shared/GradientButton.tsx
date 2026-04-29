@@ -1,9 +1,11 @@
 import { cn } from '@/lib/utils';
+import { Slot } from '@radix-ui/react-slot';
 
 interface GradientButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   variant?: 'primary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
+  asChild?: boolean;
 }
 
 const sizeMap = {
@@ -18,10 +20,12 @@ export function GradientButton({
   size = 'md',
   className,
   disabled,
+  asChild = false,
   ...props
 }: GradientButtonProps) {
+  const Comp = asChild ? Slot : "button";
   return (
-    <button
+    <Comp
       className={cn(
         'relative z-10 font-heading font-semibold rounded-xl transition-all duration-300 inline-flex items-center justify-center gap-2 tracking-wide',
         sizeMap[size],
@@ -49,6 +53,6 @@ export function GradientButton({
       {...props}
     >
       {children}
-    </button>
+    </Comp>
   );
 }

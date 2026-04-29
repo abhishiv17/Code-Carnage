@@ -240,6 +240,11 @@
     animation: fadeIn 0.35s ease-out forwards;
   }
 
+  /* Mirror local video for natural self-view */
+  .mirror {
+    transform: scaleX(-1);
+  }
+
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
