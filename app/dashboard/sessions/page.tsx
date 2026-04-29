@@ -144,12 +144,12 @@ export default function SessionsPage() {
                   </div>
 
                   {session.status === 'active' && (
-                    <Link href={`/dashboard/sessions/${session.id}`}>
-                      <GradientButton size="sm">
+                    <GradientButton asChild size="sm">
+                      <Link href={`/dashboard/sessions/${session.id}`}>
                         <Video size={14} />
                         Join
-                      </GradientButton>
-                    </Link>
+                      </Link>
+                    </GradientButton>
                   )}
                 </GlassCard>
               );
@@ -197,9 +197,9 @@ export default function SessionsPage() {
                     </p>
                   </div>
 
-                  <Link href="/dashboard/reviews">
-                    <GradientButton variant="outline" size="sm">Review</GradientButton>
-                  </Link>
+                  <GradientButton asChild variant="outline" size="sm">
+                    <Link href="/dashboard/reviews">Review</Link>
+                  </GradientButton>
                 </GlassCard>
               );
             })}

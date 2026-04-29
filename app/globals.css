@@ -216,6 +216,11 @@
     transform: translateY(-2px);
   }
 
+  /* Mirror local video for natural self-view */
+  .mirror {
+    transform: scaleX(-1);
+  }
+
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
