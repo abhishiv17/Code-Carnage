@@ -21,3 +21,7 @@ ALTER TABLE public.profiles
 -- Add a profile_completed flag to track completion
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false;
+
+-- Update default credits for new users
+ALTER TABLE public.profiles
+  ALTER COLUMN credits SET DEFAULT 10;

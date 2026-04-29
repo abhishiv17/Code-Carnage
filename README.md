@@ -49,7 +49,7 @@
 - [x] Type-based icons and relative timestamps
 
 ### 💰 Credit Economy
-- [x] Start with 1 credit
+- [x] Start with 10 credits
 - [x] Teaching a session = +1 credit earned
 - [x] Learning a session = -1 credit spent
 - [x] Credit balance displayed across dashboard

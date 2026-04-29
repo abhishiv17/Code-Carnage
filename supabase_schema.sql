@@ -18,7 +18,7 @@ create table public.profiles (
   preferred_mode text default 'both',
   languages text[] default '{}',
   profile_completed boolean default false,
-  credits integer default 1 not null,
+  credits integer default 10 not null,
   average_rating numeric(3,2) default 0.0,
   total_sessions integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
