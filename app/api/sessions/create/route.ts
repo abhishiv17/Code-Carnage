@@ -16,6 +16,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'teacherId is required' }, { status: 400 });
     }
 
+    // Handle mock/demo peer IDs — return a simulated success
+    if (teacherId.startsWith('mock-')) {
+      return NextResponse.json({
+        session: {
+          id: `demo-session-${Date.now()}`,
+          teacher_id: teacherId,
+          learner_id: user.id,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          demo: true,
+        },
+      });
+    }
+
     // Verify the learner has enough credits
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
@@ -56,14 +70,19 @@ export async function POST(req: Request) {
 
     const learnerName = learnerProfile?.username || 'Someone';
 
-    // Notify the teacher about the new session request
-    await supabase.from('notifications').insert({
-      user_id: teacherId,
-      type: 'session_request',
-      title: 'New Session Request!',
-      message: `${learnerName} wants to learn from you.`,
-      link: '/dashboard/sessions',
-    });
+    // Try to send a notification (ignore if notifications table doesn't exist)
+    try {
+      await supabase.from('notifications').insert({
+        user_id: teacherId,
+        type: 'session_request',
+        title: 'New Session Request!',
+        message: `${learnerName} wants to learn from you.`,
+        link: '/dashboard/sessions',
+      });
+    } catch {
+      // Notifications table may not exist yet — safe to ignore
+      console.log('[Sessions] Notifications table not available, skipping notification');
+    }
 
     return NextResponse.json({ session });
   } catch (error) {

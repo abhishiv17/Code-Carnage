@@ -28,37 +28,59 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileMap>({});
   const [loading, setLoading] = useState(true);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+
+  const fetchSessions = async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('sessions')
+      .select('*')
+      .or(`teacher_id.eq.${user.id},learner_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
+
+    if (data && data.length > 0) {
+      setSessions(data);
+      // Fetch profiles for all peer IDs
+      const peerIds = Array.from(new Set(
+        data.flatMap((s) => [s.teacher_id, s.learner_id]).filter((id) => id !== user.id)
+      ));
+      if (peerIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', peerIds);
+        const map: ProfileMap = {};
+        profilesData?.forEach((p) => { map[p.id] = { username: p.username }; });
+        setProfiles(map);
+      }
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    if (!user) return;
-    const fetchSessions = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('sessions')
-        .select('*')
-        .or(`teacher_id.eq.${user.id},learner_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
-
-      if (data && data.length > 0) {
-        setSessions(data);
-        // Fetch profiles for all peer IDs
-        const peerIds = Array.from(new Set(
-          data.flatMap((s) => [s.teacher_id, s.learner_id]).filter((id) => id !== user.id)
-        ));
-        if (peerIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, username')
-            .in('id', peerIds);
-          const map: ProfileMap = {};
-          profilesData?.forEach((p) => { map[p.id] = { username: p.username }; });
-          setProfiles(map);
-        }
-      }
-      setLoading(false);
-    };
     fetchSessions();
   }, [user]);
+
+  const acceptSession = async (sessionId: string) => {
+    setAcceptingId(sessionId);
+    try {
+      const res = await fetch('/api/sessions/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      if (res.ok) {
+        await fetchSessions(); // Refresh list to show active status
+      } else {
+        console.error("Failed to accept session");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAcceptingId(null);
+    }
+  };
 
   const upcoming = sessions.filter((s) => s.status === 'pending' || s.status === 'active');
   const completed = sessions.filter((s) => s.status === 'completed');
@@ -150,6 +172,25 @@ export default function SessionsPage() {
                         Join
                       </Link>
                     </GradientButton>
+                  )}
+                  {session.status === 'pending' && isTeaching && (
+                    <GradientButton 
+                      size="sm" 
+                      onClick={() => acceptSession(session.id)}
+                      disabled={acceptingId === session.id}
+                    >
+                      {acceptingId === session.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <CheckCircle2 size={14} />
+                      )}
+                      Accept
+                    </GradientButton>
+                  )}
+                  {session.status === 'pending' && !isTeaching && (
+                    <div className="text-xs text-[var(--text-muted)] italic px-2">
+                      Waiting for peer to accept...
+                    </div>
                   )}
                 </GlassCard>
               );

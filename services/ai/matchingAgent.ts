@@ -1,4 +1,4 @@
-import { groq } from './groqClient';
+import { getGroqClient } from './groqClient';
 import { MATCHING_SYSTEM_PROMPT } from './prompts';
 
 export interface PeerOffer {
@@ -25,10 +25,12 @@ export interface MatchResult {
  */
 function fallbackMatch(desiredSkill: string, availablePeers: PeerOffer[]): { matches: MatchResult[] } {
   const desired = desiredSkill.toLowerCase().trim();
+  const desiredWords = desired.split(/[\s\-_\/]+/).filter(Boolean);
 
   const scored = availablePeers
     .map((peer) => {
       const offered = peer.offered_skill.toLowerCase().trim();
+      const offeredWords = offered.split(/[\s\-_\/]+/).filter(Boolean);
 
       let score = 0;
       if (offered === desired) {
@@ -36,20 +38,42 @@ function fallbackMatch(desiredSkill: string, availablePeers: PeerOffer[]): { mat
       } else if (offered.includes(desired) || desired.includes(offered)) {
         score = 85;
       } else {
-        // Check word overlap
-        const desiredWords = desired.split(/[\s\-_\/]+/);
-        const offeredWords = offered.split(/[\s\-_\/]+/);
+        // Check word overlap, including partial token matches.
         const overlap = desiredWords.filter((w) => offeredWords.some((ow) => ow.includes(w) || w.includes(ow)));
         if (overlap.length > 0) {
           score = Math.min(75, 40 + overlap.length * 15);
+        } else {
+          // Soft fallback: similarity by common prefix length and token count.
+          const prefixLen = (() => {
+            let i = 0;
+            while (i < desired.length && i < offered.length && desired[i] === offered[i]) i += 1;
+            return i;
+          })();
+
+          if (prefixLen >= 3) {
+            score = 35;
+          }
         }
       }
 
-      return { peer, score };
+      return { peer, score: Math.max(0, Math.min(100, Math.round(score))) };
     })
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
+
+  // If strict similarity still yields nothing, return top available peers as discovery suggestions.
+  if (scored.length === 0) {
+    return {
+      matches: availablePeers.slice(0, 5).map((peer) => ({
+        peer_id: peer.peer_id,
+        username: peer.username,
+        offered_skill: peer.offered_skill,
+        compatibility_score: 30,
+        reasoning: `${peer.username} is offering ${peer.offered_skill}. No close exact match found, but this is a nearby option you can explore.`,
+      })),
+    };
+  }
 
   return {
     matches: scored.map((item) => ({
@@ -75,6 +99,11 @@ ${JSON.stringify(availablePeers, null, 2)}
 `;
 
   try {
+    const groq = getGroqClient();
+    if (!groq) {
+      return fallbackMatch(desiredSkill, availablePeers);
+    }
+
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: 'system', content: MATCHING_SYSTEM_PROMPT },

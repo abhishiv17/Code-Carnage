@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
@@ -21,6 +21,13 @@ export default function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('password');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'auth_failed') {
+      toast.error('Authentication failed. Please try logging in again.');
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,49 +37,60 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    const supabase = createClient();
 
-    if (mode === 'magic') {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-      });
+    try {
+      const supabase = createClient();
+
+      if (mode === 'magic') {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        });
+        if (error) {
+          toast.error(error.message);
+        } else {
+          setMagicLinkSent(true);
+          toast.success('Magic link sent! Check your inbox.');
+        }
+        return;
+      }
+
+      // Password login
+      if (!password) {
+        toast.error('Please enter your password');
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast.error(error.message);
       } else {
-        setMagicLinkSent(true);
-        toast.success('Magic link sent! Check your inbox.');
+        toast.success('Welcome back!');
+        router.push(ROUTES.dashboard);
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Something went wrong while logging in. Please try again.';
+      toast.error(message);
+    } finally {
       setLoading(false);
-      return;
-    }
-
-    // Password login
-    if (!password) {
-      toast.error('Please enter your password');
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-    } else {
-      toast.success('Welcome back!');
-      router.push(ROUTES.dashboard);
     }
   };
 
   const handleGitHubLogin = async () => {
     setOauthLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) {
-      toast.error(error.message);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) {
+        toast.error(error.message);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'GitHub login failed. Please try again.';
+      toast.error(message);
+    } finally {
       setOauthLoading(false);
     }
   };

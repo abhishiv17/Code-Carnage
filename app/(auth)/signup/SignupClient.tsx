@@ -31,62 +31,82 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    if (mode === 'magic') {
-      const { error } = await supabase.auth.signInWithOtp({
+      if (mode === 'magic') {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+            data: { username: fullName || email.split('@')[0] },
+          },
+        });
+        if (error) {
+          toast.error(error.message);
+        } else {
+          setMagicLinkSent(true);
+          toast.success('Magic link sent! Check your inbox.');
+        }
+        return;
+      }
+
+      // Password signup
+      if (!fullName) {
+        toast.error('Please enter your name');
+        return;
+      }
+      if (!password || password.length < 8) {
+        toast.error('Password must be at least 8 characters');
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
-          data: { username: fullName || email.split('@')[0] },
+        password,
+        options: { 
+          data: { 
+            full_name: fullName,
+            username: email.split('@')[0] + Math.floor(Math.random() * 1000)
+          } 
         },
       });
+
       if (error) {
         toast.error(error.message);
-      } else {
-        setMagicLinkSent(true);
-        toast.success('Magic link sent! Check your inbox.');
+        return;
       }
-      setLoading(false);
-      return;
-    }
 
-    // Password signup
-    if (!fullName) {
-      toast.error('Please enter your name');
-      setLoading(false);
-      return;
-    }
-    if (!password || password.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      setLoading(false);
-      return;
-    }
+      if (data.session) {
+        toast.success('Account created! Let\'s set up your skills.');
+        router.push(ROUTES.onboarding);
+        return;
+      }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username: fullName } },
-    });
-
-    if (error) {
-      toast.error(error.message);
+      toast.success('Account created. Please check your email to confirm your account.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Something went wrong while creating your account. Please try again.';
+      toast.error(message);
+    } finally {
       setLoading(false);
-    } else {
-      toast.success('Account created! Let\'s set up your skills.');
-      router.push(ROUTES.onboarding);
     }
   };
 
   const handleGitHubSignup = async () => {
     setOauthLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/onboarding` },
-    });
-    if (error) {
-      toast.error(error.message);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/onboarding` },
+      });
+      if (error) {
+        toast.error(error.message);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'GitHub signup failed. Please try again.';
+      toast.error(message);
+    } finally {
       setOauthLoading(false);
     }
   };

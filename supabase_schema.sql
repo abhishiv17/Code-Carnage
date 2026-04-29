@@ -18,7 +18,7 @@ create table public.profiles (
   preferred_mode text default 'both',
   languages text[] default '{}',
   profile_completed boolean default false,
-  credits integer default 1 not null,
+  credits integer default 5 not null,
   average_rating numeric(3,2) default 0.0,
   total_sessions integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -32,8 +32,12 @@ create policy "Users can update own profile." on profiles for update using (auth
 create function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, username)
-  values (new.id, new.raw_user_meta_data->>'username');
+  insert into public.profiles (id, username, full_name)
+  values (
+    new.id, 
+    coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8)),
+    new.raw_user_meta_data->>'full_name'
+  );
   return new;
 end;
 $$ language plpgsql security definer;
@@ -106,3 +110,67 @@ $$ language plpgsql security definer;
 create trigger on_review_created
   after insert on public.reviews
   for each row execute procedure public.update_average_rating();
+
+-- 5. Indexes for Performance
+create index idx_profiles_username on public.profiles(username);
+create index idx_skills_user_id on public.skills(user_id);
+create index idx_skills_name on public.skills(skill_name);
+create index idx_sessions_teacher_id on public.sessions(teacher_id);
+create index idx_sessions_learner_id on public.sessions(learner_id);
+create index idx_sessions_status on public.sessions(status);
+create index idx_reviews_session_id on public.reviews(session_id);
+create index idx_reviews_reviewee_id on public.reviews(reviewee_id);
+
+-- 6. Additional Security & Helper Functions
+-- Function to handle credit exchange (can be expanded later)
+create function public.exchange_credits(session_id uuid)
+returns void as $$
+declare
+  s_teacher_id uuid;
+  s_learner_id uuid;
+begin
+  select teacher_id, learner_id into s_teacher_id, s_learner_id 
+  from public.sessions where id = session_id;
+
+  update public.profiles set credits = credits + 1 where id = s_teacher_id;
+  update public.profiles set credits = credits - 1 where id = s_learner_id;
+end;
+$$ language plpgsql security definer;
+
+-- 7. Matching Logic
+-- Function to find potential matches for a user
+-- Returns users who have skills this user wants, and want skills this user has.
+create or replace function public.find_matches(p_user_id uuid)
+returns table (
+  profile_id uuid,
+  username text,
+  full_name text,
+  avatar_url text,
+  offered_skill text,
+  desired_skill text,
+  match_score float
+) as $$
+begin
+  return query
+  with user_desired as (
+    select skill_name from public.skills where user_id = p_user_id and type = 'desired'
+  ),
+  user_offered as (
+    select skill_name from public.skills where user_id = p_user_id and type = 'offered'
+  )
+  select 
+    p.id as profile_id,
+    p.username,
+    p.full_name,
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=' || p.username as avatar_url,
+    s_offered.skill_name as offered_skill,
+    s_desired.skill_name as desired_skill,
+    1.0 as match_score -- Simplified scoring
+  from public.profiles p
+  join public.skills s_offered on p.id = s_offered.user_id and s_offered.type = 'offered'
+  join public.skills s_desired on p.id = s_desired.user_id and s_desired.type = 'desired'
+  where p.id != p_user_id
+  and s_offered.skill_name in (select skill_name from user_desired)
+  and s_desired.skill_name in (select skill_name from user_offered);
+end;
+$$ language plpgsql security definer;

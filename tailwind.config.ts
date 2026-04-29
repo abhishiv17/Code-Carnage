@@ -51,6 +51,10 @@ const config: Config = {
         'accent-slate': '#6d859e',
         'accent-rose': '#b87b7b',
         'accent-clay': '#a67c65',
+        'accent-violet': '#8b5cf6',
+        'accent-amber': '#f59e0b',
+        'accent-coral': '#fb7185',
+        'accent-emerald': '#10b981',
       },
       borderRadius: {
         xl: '1rem',

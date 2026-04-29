@@ -2,14 +2,22 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Groq from 'groq-sdk';
 
-if (!process.env.GROQ_API_KEY) {
-  throw new Error('GROQ_API_KEY environment variable is not set');
-}
+function getGroqClient(): Groq | null {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return new Groq({ apiKey });
+}
 
 export async function POST(req: Request) {
   try {
+    const groq = getGroqClient();
+    if (!groq) {
+      return NextResponse.json({ error: 'AI chat is not configured on this server.' }, { status: 503 });
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     

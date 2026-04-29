@@ -10,24 +10,26 @@
     --bg-sage: #edf2f0;
     --bg-sand: #f5f2eb;
     --bg-rose: #f7f2f1;
+    --bg-cream: #fffdfa;
 
-    /* Text */
-    --text-primary: #1a1f1c;
-    --text-secondary: #5e6b63;
-    --text-muted: #8b9690;
-
-    /* Borders */
-    --border-soft: rgba(26, 31, 28, 0.08);
-    --border-hover: rgba(26, 31, 28, 0.15);
-
+    /* Glass & Surface tokens */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(26, 31, 28, 0.08);
+    --bg-surface-solid: #ffffff;
+    --bg-warm: #fdfaf5;
+    
     /* Accents - Organic Midtones */
-    --accent-matcha: #7ea182;
-    --accent-mustard: #d6a848;
-    --accent-slate: #6d859e;
-    --accent-rose: #b87b7b;
-    --accent-clay: #a67c65;
+    --accent-matcha: 128 17% 56%;
+    --accent-mustard: 41 65% 56%;
+    --accent-slate: 212 22% 52%;
+    --accent-rose: 0 31% 60%;
+    --accent-clay: 21 27% 52%;
+    --accent-violet: 258 90% 66%;
+    --accent-amber: 38 92% 50%;
+    --accent-coral: 350 95% 71%;
+    --accent-emerald: 161 68% 39%;
 
-    --gradient-primary: linear-gradient(135deg, #7ea182 0%, #6d859e 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--accent-matcha)) 0%, hsl(var(--accent-slate)) 100%);
     
     --radius: 0.75rem;
     --radius-lg: 1rem;
@@ -40,7 +42,7 @@
     --card-foreground: 150 9% 11%;
     --popover: 40 20% 93%;
     --popover-foreground: 150 9% 11%;
-    --primary: 128 17% 56%;
+    --primary: var(--accent-matcha);
     --primary-foreground: 0 0% 100%;
     --secondary: 40 20% 93%;
     --secondary-foreground: 150 9% 11%;
@@ -52,34 +54,40 @@
     --destructive-foreground: 0 0% 100%;
     --border: 150 5% 85%;
     --input: 150 5% 85%;
-    --ring: 128 17% 56%;
+    --ring: var(--accent-matcha);
   }
 
   .dark {
     /* Dark Mode: Midnight Slate */
     --bg-base: #121413;
     --bg-surface: #1a1f1c;
+    --bg-surface-solid: #151a17;
     --bg-sage: #151a17;
     --bg-sand: #181714;
     --bg-rose: #1c1818;
+    --bg-warm: #1e1b18;
+
+    /* Glass & Surface tokens */
+    --glass-bg: rgba(26, 31, 28, 0.7);
+    --glass-border: rgba(232, 230, 225, 0.08);
 
     /* Text */
     --text-primary: #e8e6e1;
     --text-secondary: #9fa8a1;
     --text-muted: #747d77;
 
-    /* Borders */
-    --border-soft: rgba(232, 230, 225, 0.08);
-    --border-hover: rgba(232, 230, 225, 0.15);
-
     /* Accents - slightly brightened for dark mode contrast */
-    --accent-matcha: #8ab08e;
-    --accent-mustard: #e6b855;
-    --accent-slate: #7c98b5;
-    --accent-rose: #c98989;
-    --accent-clay: #b88a72;
+    --accent-matcha: 128 20% 62%;
+    --accent-mustard: 41 78% 62%;
+    --accent-slate: 212 30% 60%;
+    --accent-rose: 0 40% 66%;
+    --accent-clay: 21 35% 58%;
+    --accent-violet: 258 90% 72%;
+    --accent-amber: 38 92% 60%;
+    --accent-coral: 350 95% 75%;
+    --accent-emerald: 161 68% 45%;
 
-    --gradient-primary: linear-gradient(135deg, #8ab08e 0%, #7c98b5 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--accent-matcha)) 0%, hsl(var(--accent-slate)) 100%);
 
     /* shadcn compat */
     --background: 150 5% 8%;
@@ -88,7 +96,7 @@
     --card-foreground: 45 15% 90%;
     --popover: 150 9% 11%;
     --popover-foreground: 45 15% 90%;
-    --primary: 128 20% 62%;
+    --primary: var(--accent-matcha);
     --primary-foreground: 150 5% 8%;
     --secondary: 150 9% 11%;
     --secondary-foreground: 45 15% 90%;
@@ -100,7 +108,7 @@
     --destructive-foreground: 45 15% 90%;
     --border: 150 5% 20%;
     --input: 150 5% 20%;
-    --ring: 128 20% 62%;
+    --ring: var(--accent-matcha);
   }
 }
 
@@ -189,6 +197,19 @@
   .glass-hover:hover {
     background: color-mix(in srgb, var(--bg-base) 90%, transparent);
     border-color: var(--border-hover);
+  }
+
+  .glass-raised {
+    background: color-mix(in srgb, var(--bg-surface) 90%, transparent);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass-inset {
+    background: color-mix(in srgb, var(--bg-base) 50%, transparent);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
   }
 
   .gradient-border {

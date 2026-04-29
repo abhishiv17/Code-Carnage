@@ -1,8 +1,34 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
+
+let cachedAuthUser: User | null | undefined;
+let authUserRequest: Promise<User | null> | null = null;
+
+async function getSharedAuthUser(supabase: SupabaseClient): Promise<User | null> {
+  if (cachedAuthUser !== undefined) {
+    return cachedAuthUser;
+  }
+
+  if (!authUserRequest) {
+    authUserRequest = supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        cachedAuthUser = data.session?.user ?? null;
+        return cachedAuthUser;
+      })
+      .catch((error) => {
+        authUserRequest = null;
+        throw error;
+      });
+  }
+
+  return authUserRequest;
+}
 
 export interface UserProfile {
   id: string;
@@ -49,7 +75,7 @@ export function useUser(): UseUserReturn {
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const [{ data: profileData }, { data: skillsData }] = await Promise.all([
@@ -59,7 +85,7 @@ export function useUser(): UseUserReturn {
 
     if (profileData) setProfile(profileData as UserProfile);
     if (skillsData) setSkills(skillsData as UserSkill[]);
-  }, []);
+  }, [supabase]);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) await fetchProfile(user.id);
@@ -68,9 +94,8 @@ export function useUser(): UseUserReturn {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data: { user: authUser }, error } = await supabase.auth.getUser();
-        if (error) console.error("Auth error:", error);
-        
+        const authUser = await getSharedAuthUser(supabase);
+
         if (authUser) {
           setUser(authUser);
           await fetchProfile(authUser.id);
@@ -87,6 +112,8 @@ export function useUser(): UseUserReturn {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         try {
+          cachedAuthUser = session?.user ?? null;
+          authUserRequest = null;
           if (session?.user) {
             setUser(session.user);
             await fetchProfile(session.user.id);
@@ -102,14 +129,14 @@ export function useUser(): UseUserReturn {
     );
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, supabase.auth]);
+  }, [fetchProfile, supabase]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
     setSkills([]);
-  }, []);
+  }, [supabase]);
 
   return { user, profile, skills, loading, signOut, refreshProfile };
 }
