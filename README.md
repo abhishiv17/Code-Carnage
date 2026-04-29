@@ -38,6 +38,8 @@
 | App Constants | `lib/constants.ts` | 🔲 SCAFFOLD | All |
 | Supabase Client | `lib/supabase/client.ts` | ✅ DONE | Kiran |
 | Supabase Server | `lib/supabase/server.ts` | ✅ DONE | Kiran |
+| Session Accept Endpoint | `app/api/sessions/accept/route.ts` | ✅ DONE | Kiran |
+| Realtime Session Notifications | `services/realtime/sessions.ts` | ✅ DONE | Chethan |
 | Backend Test Page | `app/test/page.tsx` | ✅ DONE | Abhishek |
 | Health Check API | `app/api/health/route.ts` | ✅ DONE | Abhishek |
 
