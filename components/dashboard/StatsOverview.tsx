@@ -1,39 +1,60 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
-import { CURRENT_USER, MOCK_SESSIONS } from '@/lib/mock-data';
+import { useUser } from '@/hooks/useUser';
 import { Coins, BookOpen, GraduationCap, TrendingUp } from 'lucide-react';
 
 export function StatsOverview() {
-  const upcomingSessions = MOCK_SESSIONS.filter((s) => s.status === 'upcoming').length;
-  const completedSessions = MOCK_SESSIONS.filter((s) => s.status === 'completed').length;
+  const { user, profile } = useUser();
+  const [sessionCounts, setSessionCounts] = useState({ upcoming: 0, completed: 0 });
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchCounts = async () => {
+      const supabase = createClient();
+      const { data: sessions } = await supabase
+        .from('sessions')
+        .select('status')
+        .or(`teacher_id.eq.${user.id},learner_id.eq.${user.id}`);
+
+      if (sessions) {
+        setSessionCounts({
+          upcoming: sessions.filter((s) => s.status === 'active' || s.status === 'pending').length,
+          completed: sessions.filter((s) => s.status === 'completed').length,
+        });
+      }
+    };
+    fetchCounts();
+  }, [user]);
 
   const stats = [
     {
       label: 'Skill Credits',
-      value: CURRENT_USER.credits,
+      value: profile?.credits ?? 0,
       icon: Coins,
       color: 'text-accent-amber',
       bgColor: 'bg-accent-amber/10',
     },
     {
       label: 'Sessions Done',
-      value: CURRENT_USER.sessionsCompleted,
+      value: sessionCounts.completed,
       icon: BookOpen,
       color: 'text-accent-emerald',
       bgColor: 'bg-accent-emerald/10',
     },
     {
       label: 'Upcoming',
-      value: upcomingSessions,
+      value: sessionCounts.upcoming,
       icon: GraduationCap,
       color: 'text-accent-violet',
       bgColor: 'bg-accent-violet/10',
     },
     {
       label: 'Rating',
-      value: CURRENT_USER.rating,
+      value: profile?.average_rating ?? 0,
       icon: TrendingUp,
       color: 'text-accent-coral',
       bgColor: 'bg-accent-coral/10',

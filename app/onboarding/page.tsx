@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import { SKILL_CATEGORIES, ALL_SKILLS, ROUTES } from '@/lib/constants';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type Step = 'have' | 'want' | 'confirm';
 
@@ -16,6 +18,33 @@ export default function OnboardingPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [skillsHave, setSkillsHave] = useState<string[]>([]);
   const [skillsWant, setSkillsWant] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const router = useRouter();
+
+  const handleSaveSkills = async () => {
+    setSaving(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Please log in first');
+      router.push(ROUTES.login);
+      return;
+    }
+
+    const skillRows = [
+      ...skillsHave.map((s) => ({ user_id: user.id, skill_name: s, type: 'offered' as const })),
+      ...skillsWant.map((s) => ({ user_id: user.id, skill_name: s, type: 'desired' as const })),
+    ];
+
+    const { error } = await supabase.from('skills').insert(skillRows);
+    if (error) {
+      toast.error('Failed to save skills: ' + error.message);
+      setSaving(false);
+    } else {
+      toast.success('Skills saved! Welcome to SkillSwap 🎉');
+      router.push(ROUTES.dashboard);
+    }
+  };
 
   const currentSkills = step === 'have' ? skillsHave : skillsWant;
   const setCurrentSkills = step === 'have' ? setSkillsHave : setSkillsWant;
@@ -209,12 +238,9 @@ export default function OnboardingPage() {
           </button>
 
           {step === 'confirm' ? (
-            <Link href={ROUTES.dashboard}>
-              <GradientButton size="md">
-                Enter Dashboard
-                <ArrowRight size={16} />
+              <GradientButton size="md" onClick={handleSaveSkills} disabled={saving}>
+                {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <>Enter Dashboard <ArrowRight size={16} /></>}
               </GradientButton>
-            </Link>
           ) : (
             <GradientButton
               size="md"

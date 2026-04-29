@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { APP_NAME, ROUTES } from '@/lib/constants';
-import { CURRENT_USER } from '@/lib/mock-data';
+import { useUser } from '@/hooks/useUser';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -27,6 +27,9 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { profile, signOut } = useUser();
+
+  const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
   return (
     <aside
@@ -75,21 +78,30 @@ export function Sidebar() {
       <div className="px-3 py-4 border-t border-[var(--glass-border)]">
         <div className={cn('flex items-center gap-3 px-2', collapsed && 'justify-center')}>
           <img
-            src={CURRENT_USER.avatar}
-            alt={CURRENT_USER.name}
+            src={avatarUrl}
+            alt={profile?.username || 'User'}
             className="w-8 h-8 rounded-full bg-[var(--bg-surface-solid)]"
           />
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                {CURRENT_USER.name}
+                {profile?.username || 'Loading...'}
               </p>
               <p className="text-xs text-[var(--text-muted)] truncate">
-                {CURRENT_USER.credits} credits
+                {profile?.credits ?? 0} credits
               </p>
             </div>
           )}
         </div>
+        {!collapsed && (
+          <button
+            onClick={signOut}
+            className="flex items-center gap-2 px-3 py-2 mt-2 w-full rounded-xl text-sm text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut size={16} />
+            Sign Out
+          </button>
+        )}
       </div>
 
       {/* Collapse toggle */}

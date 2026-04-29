@@ -2,13 +2,40 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { APP_NAME, ROUTES } from '@/lib/constants';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+    } else {
+      toast.success('Welcome back!');
+      router.push(ROUTES.dashboard);
+    }
+  };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4">
@@ -36,7 +63,7 @@ export default function LoginPage() {
         </div>
 
         <GlassCard padding="lg" className="mb-6">
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleLogin}>
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
@@ -47,6 +74,8 @@ export default function LoginPage() {
                 <input
                   type="email"
                   placeholder="you@college.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
                 />
               </div>
@@ -62,6 +91,8 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-11 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
                 />
                 <button
@@ -83,11 +114,9 @@ export default function LoginPage() {
             </div>
 
             {/* Submit */}
-            <Link href={ROUTES.dashboard}>
-              <GradientButton className="w-full" size="lg">
-                Log in
-              </GradientButton>
-            </Link>
+            <GradientButton className="w-full" size="lg" type="submit" disabled={loading}>
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Logging in...</> : 'Log in'}
+            </GradientButton>
           </form>
         </GlassCard>
 

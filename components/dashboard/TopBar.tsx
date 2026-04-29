@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { CURRENT_USER } from '@/lib/mock-data';
+import { useUser } from '@/hooks/useUser';
 import { Search, Bell, Coins } from 'lucide-react';
 
 export function TopBar() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { profile } = useUser();
+
+  const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
   return (
     <header className="sticky top-0 z-30 glass border-b border-[var(--glass-border)] px-6 py-3">
@@ -28,7 +31,7 @@ export function TopBar() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent-amber/10 border border-accent-amber/20">
             <Coins size={16} className="text-accent-amber" />
             <span className="text-sm font-heading font-semibold text-accent-amber">
-              {CURRENT_USER.credits}
+              {profile?.credits ?? 0}
             </span>
           </div>
 
@@ -43,8 +46,8 @@ export function TopBar() {
 
           {/* User avatar */}
           <img
-            src={CURRENT_USER.avatar}
-            alt={CURRENT_USER.name}
+            src={avatarUrl}
+            alt={profile?.username || 'User'}
             className="w-8 h-8 rounded-full bg-[var(--bg-surface-solid)] cursor-pointer hover:ring-2 hover:ring-accent-violet/30 transition-all"
           />
         </div>

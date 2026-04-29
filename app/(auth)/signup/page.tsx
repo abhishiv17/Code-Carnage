@@ -2,13 +2,49 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { APP_NAME, ROUTES } from '@/lib/constants';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username: fullName } },
+    });
+
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+    } else {
+      toast.success('Account created! Let\'s set up your skills.');
+      router.push(ROUTES.onboarding);
+    }
+  };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-12">
@@ -36,7 +72,7 @@ export default function SignupPage() {
         </div>
 
         <GlassCard padding="lg" className="mb-6">
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleSignup}>
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
@@ -47,6 +83,8 @@ export default function SignupPage() {
                 <input
                   type="text"
                   placeholder="Arjun Raghavan"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
                 />
               </div>
@@ -62,6 +100,8 @@ export default function SignupPage() {
                 <input
                   type="email"
                   placeholder="you@college.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
                 />
               </div>
@@ -77,6 +117,8 @@ export default function SignupPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Min 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-11 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
                 />
                 <button
@@ -91,11 +133,9 @@ export default function SignupPage() {
             </div>
 
             {/* Submit */}
-            <Link href={ROUTES.onboarding}>
-              <GradientButton className="w-full" size="lg">
-                Create Account
-              </GradientButton>
-            </Link>
+            <GradientButton className="w-full" size="lg" type="submit" disabled={loading}>
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Creating account...</> : 'Create Account'}
+            </GradientButton>
           </form>
         </GlassCard>
 
