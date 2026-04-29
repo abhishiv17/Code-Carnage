@@ -12,11 +12,11 @@ import { Coins, BookOpen, GraduationCap, TrendingUp } from 'lucide-react';
 export function StatsOverview() {
   const { user, profile } = useUser();
   const [sessionCounts, setSessionCounts] = useState({ upcoming: 0, completed: 0 });
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     if (!user) return;
     const fetchCounts = async () => {
-      const supabase = createClient();
       const { data: sessions } = await supabase
         .from('sessions')
         .select('status')

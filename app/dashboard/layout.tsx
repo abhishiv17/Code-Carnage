@@ -1,34 +1,36 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
 import { ChatbotWidget } from '@/components/shared/ChatbotWidget';
 import { ROUTES } from '@/lib/constants';
-import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useUser();
+  const { user, profile, skills, loading } = useUser();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push(ROUTES.login);
+    // `loading` is only true for ~5ms (localStorage read). No spinner needed.
+    if (loading) return;
+
+    if (!user) {
+      router.replace(ROUTES.login);
+      return;
     }
-  }, [loading, user, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-accent-violet" />
-      </div>
-    );
-  }
+    // Only check onboarding once profile has loaded from DB.
+    // profile === null means "still fetching", not "no profile".
+    // profile !== null && skills.length === 0 means "profile loaded, no skills → onboarding".
+    if (profile && skills.length === 0) {
+      router.replace(ROUTES.onboarding);
+    }
+  }, [loading, user, profile, skills, router]);
 
-  if (!user) return null;
+  // Auth not determined yet — render nothing (instant, < 10ms)
+  if (loading || !user) return null;
 
   return (
     <div className="min-h-screen">
@@ -39,7 +41,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
-      {/* Floating AI Chatbot */}
       <ChatbotWidget />
     </div>
   );

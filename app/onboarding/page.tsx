@@ -1,8 +1,4 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-
-const OnboardingClient = dynamic(() => import('./OnboardingClient'), { ssr: false });
+import OnboardingClient from './OnboardingClient';
 
 export default function OnboardingPage() {
   return <OnboardingClient />;

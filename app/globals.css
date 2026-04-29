@@ -7,6 +7,8 @@
     /* Light Mode: Botanical & Stone */
     --bg-base: #f8f6f0;
     --bg-surface: #f0eee9;
+    --bg-surface-solid: #e8e5de;
+    --bg-cream: #f5f3ed;
     --bg-sage: #edf2f0;
     --bg-sand: #f5f2eb;
     --bg-rose: #f7f2f1;
@@ -19,6 +21,8 @@
     /* Borders */
     --border-soft: rgba(26, 31, 28, 0.08);
     --border-hover: rgba(26, 31, 28, 0.15);
+    --glass-border: rgba(26, 31, 28, 0.10);
+    --glass-bg: rgba(240, 238, 233, 0.5);
 
     /* Accents - Organic Midtones */
     --accent-matcha: #7ea182;
@@ -59,6 +63,8 @@
     /* Dark Mode: Midnight Slate */
     --bg-base: #121413;
     --bg-surface: #1a1f1c;
+    --bg-surface-solid: #222826;
+    --bg-cream: #181c1a;
     --bg-sage: #151a17;
     --bg-sand: #181714;
     --bg-rose: #1c1818;
@@ -71,6 +77,8 @@
     /* Borders */
     --border-soft: rgba(232, 230, 225, 0.08);
     --border-hover: rgba(232, 230, 225, 0.15);
+    --glass-border: rgba(232, 230, 225, 0.10);
+    --glass-bg: rgba(26, 31, 28, 0.5);
 
     /* Accents - slightly brightened for dark mode contrast */
     --accent-matcha: #8ab08e;

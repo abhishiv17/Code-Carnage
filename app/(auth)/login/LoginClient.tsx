@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { APP_NAME, ROUTES } from '@/lib/constants';
@@ -21,6 +22,18 @@ export default function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('password');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const router = useRouter();
+  const { user, loading: authLoading } = useUser();
+  const hasCheckedAuth = useRef(false);
+
+  // ONE-TIME check: if already logged in when page mounts, go to dashboard.
+  // Does NOT re-fire when login changes auth state — prevents race condition.
+  useEffect(() => {
+    if (authLoading || hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+    if (user) {
+      router.replace(ROUTES.dashboard);
+    }
+  }, [authLoading, user, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +73,6 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       toast.success('Welcome back!');
-      router.refresh();
       window.location.href = ROUTES.dashboard;
     }
   };

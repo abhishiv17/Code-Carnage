@@ -60,7 +60,7 @@ const podiumColors = [
 ];
 
 export default function LeaderboardPage() {
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const { data: entries = [], isLoading: loading } = useQuery({
     queryKey: ['leaderboard'],

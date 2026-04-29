@@ -27,7 +27,7 @@ interface ProfileMap {
 
 export default function SessionsPage() {
   const { user } = useUser();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const { data, isLoading: loading } = useQuery({
     queryKey: ['sessions', user?.id],

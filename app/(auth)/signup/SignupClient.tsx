@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { APP_NAME, ROUTES } from '@/lib/constants';
@@ -22,6 +23,18 @@ export default function SignupPage() {
   const [mode, setMode] = useState<AuthMode>('password');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const router = useRouter();
+  const { user: authUser, loading: authLoading } = useUser();
+  const hasCheckedAuth = useRef(false);
+
+  // ONE-TIME check: if already logged in when page mounts, go to dashboard.
+  // Does NOT re-fire when signUp() changes auth state — prevents race condition.
+  useEffect(() => {
+    if (authLoading || hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+    if (authUser) {
+      router.replace(ROUTES.dashboard);
+    }
+  }, [authLoading, authUser, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,19 +76,25 @@ export default function SignupPage() {
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username: fullName } },
-    });
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { username: fullName } },
+      });
 
-    if (error) {
-      toast.error(error.message);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Account created! Let\'s set up your profile.');
+        window.location.href = ROUTES.onboarding;
+        return; // Don't reset loading — page is navigating away
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      toast.error('Something went wrong during signup. Please try again.');
+    } finally {
       setLoading(false);
-    } else {
-      toast.success('Account created! Let\'s set up your skills.');
-      router.refresh();
-      window.location.href = ROUTES.onboarding;
     }
   };
 

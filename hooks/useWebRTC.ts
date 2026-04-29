@@ -55,6 +55,7 @@ export function useWebRTC({
   const channelRef = useRef<RealtimeChannel | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
+  const supabaseRef = useRef(createClient());
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -81,7 +82,7 @@ export function useWebRTC({
     if (!sessionId || !userId) return;
 
     let isMounted = true;
-    const supabase = createClient();
+    const supabase = supabaseRef.current;
     const pendingCandidates: RTCIceCandidateInit[] = [];
 
     async function init() {
@@ -203,8 +204,7 @@ export function useWebRTC({
       pcRef.current?.close();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       if (channelRef.current) {
-        const supabase = createClient();
-        supabase.removeChannel(channelRef.current);
+        supabaseRef.current.removeChannel(channelRef.current);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -10,17 +10,65 @@ import { SkillBadge } from '@/components/shared/SkillBadge';
 import {
   Coins, Star, Calendar, Loader2, Save, User, GraduationCap,
   MapPin, Globe, Phone, Github, Linkedin, Languages, Monitor,
-  ChevronDown, X, Plus,
+  ChevronDown, X, Plus, Trash2, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ALL_SKILLS } from '@/lib/constants';
+import { authFetch } from '@/lib/authFetch';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 const DEGREE_OPTIONS = ['B.Tech', 'B.E.', 'B.Sc', 'BBA', 'BCA', 'B.Com', 'BA', 'M.Tech', 'M.Sc', 'MBA', 'MCA', 'PhD', 'Other'];
 const SESSION_MODES = ['Online', 'In-person', 'Both'];
 const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Urdu', 'Odia', 'Assamese', 'French', 'German', 'Spanish', 'Japanese', 'Korean', 'Mandarin'];
 const YEAR_OPTIONS = [1, 2, 3, 4, 5];
+
+// Defined outside ProfilePage to prevent focus loss on re-renders
+function FormInput({ label, icon: Icon, value, onChange, placeholder, type = 'text' }: {
+  label: string; icon: React.ElementType; value: string;
+  onChange: (v: string) => void; placeholder: string; type?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
+      <div className="relative">
+        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
+        />
+      </div>
+    </div>
+  );
+}
+
+function FormSelect({ label, icon: Icon, value, onChange, options, placeholder }: {
+  label: string; icon: React.ElementType; value: string;
+  onChange: (v: string) => void; options: string[]; placeholder: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
+      <div className="relative">
+        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all appearance-none cursor-pointer"
+        >
+          <option value="">{placeholder}</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+      </div>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const { profile, skills, loading, refreshProfile } = useUser();
@@ -48,6 +96,7 @@ export default function ProfilePage() {
   const [offeredSkillInput, setOfferedSkillInput] = useState('');
   const [desiredSkillInput, setDesiredSkillInput] = useState('');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Populate form when profile loads
   useEffect(() => {
@@ -173,49 +222,6 @@ export default function ProfilePage() {
   const desiredSkills = skills.filter((s) => s.type === 'desired');
   const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
-  // Reusable input component
-  const Input = ({ label, icon: Icon, value, onChange, placeholder, type = 'text' }: {
-    label: string; icon: React.ElementType; value: string;
-    onChange: (v: string) => void; placeholder: string; type?: string;
-  }) => (
-    <div>
-      <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
-      <div className="relative">
-        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
-        />
-      </div>
-    </div>
-  );
-
-  const Select = ({ label, icon: Icon, value, onChange, options, placeholder }: {
-    label: string; icon: React.ElementType; value: string;
-    onChange: (v: string) => void; options: string[]; placeholder: string;
-  }) => (
-    <div>
-      <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
-      <div className="relative">
-        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all appearance-none cursor-pointer"
-        >
-          <option value="">{placeholder}</option>
-          {options.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
@@ -224,9 +230,6 @@ export default function ProfilePage() {
           <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-1">Profile Settings</h1>
           <p className="text-sm text-[var(--text-muted)]">Manage your skill exchange profile</p>
         </div>
-        <GradientButton onClick={handleSave} disabled={saving} size="md">
-          {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><Save size={16} /> Save Changes</>}
-        </GradientButton>
       </div>
 
       {/* Profile header card */}
@@ -279,10 +282,10 @@ export default function ProfilePage() {
           <User size={15} /> Personal Info
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Full Name" icon={User} value={fullName} onChange={setFullName} placeholder="Arjun Raghavan" />
-          <Input label="Phone" icon={Phone} value={phoneNum} onChange={setPhoneNum} placeholder="+91 98765 43210" type="tel" />
-          <Select label="Gender" icon={User} value={gender} onChange={setGender} options={GENDER_OPTIONS} placeholder="Select gender" />
-          <Input label="Age" icon={Calendar} value={age} onChange={setAge} placeholder="20" type="number" />
+          <FormInput label="Full Name" icon={User} value={fullName} onChange={setFullName} placeholder="Arjun Raghavan" />
+          <FormInput label="Phone" icon={Phone} value={phoneNum} onChange={setPhoneNum} placeholder="+91 98765 43210" type="tel" />
+          <FormSelect label="Gender" icon={User} value={gender} onChange={setGender} options={GENDER_OPTIONS} placeholder="Select gender" />
+          <FormInput label="Age" icon={Calendar} value={age} onChange={setAge} placeholder="20" type="number" />
           <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Bio</label>
             <textarea
@@ -303,12 +306,12 @@ export default function ProfilePage() {
           <GraduationCap size={15} /> Academic Info
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="College Name" icon={GraduationCap} value={collegeName} onChange={setCollegeName} placeholder="IIT Bombay" />
-          <Select label="Degree" icon={GraduationCap} value={degree} onChange={setDegree} options={DEGREE_OPTIONS} placeholder="Select degree" />
-          <Input label="Branch / Major" icon={GraduationCap} value={branch} onChange={setBranch} placeholder="Computer Science" />
-          <Select label="Year of Study" icon={Calendar} value={yearOfStudy} onChange={setYearOfStudy} options={YEAR_OPTIONS.map(String)} placeholder="Select year" />
-          <Input label="Graduation Year" icon={Calendar} value={gradYear} onChange={setGradYear} placeholder="2027" type="number" />
-          <Input label="City / Campus" icon={MapPin} value={city} onChange={setCity} placeholder="Mumbai" />
+          <FormInput label="College Name" icon={GraduationCap} value={collegeName} onChange={setCollegeName} placeholder="IIT Bombay" />
+          <FormSelect label="Degree" icon={GraduationCap} value={degree} onChange={setDegree} options={DEGREE_OPTIONS} placeholder="Select degree" />
+          <FormInput label="Branch / Major" icon={GraduationCap} value={branch} onChange={setBranch} placeholder="Computer Science" />
+          <FormSelect label="Year of Study" icon={Calendar} value={yearOfStudy} onChange={setYearOfStudy} options={YEAR_OPTIONS.map(String)} placeholder="Select year" />
+          <FormInput label="Graduation Year" icon={Calendar} value={gradYear} onChange={setGradYear} placeholder="2027" type="number" />
+          <FormInput label="City / Campus" icon={MapPin} value={city} onChange={setCity} placeholder="Mumbai" />
         </div>
       </GlassCard>
 
@@ -318,8 +321,8 @@ export default function ProfilePage() {
           <Globe size={15} /> Social Links
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="GitHub" icon={Github} value={githubUrl} onChange={setGithubUrl} placeholder="https://github.com/username" type="url" />
-          <Input label="LinkedIn" icon={Linkedin} value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/in/username" type="url" />
+          <FormInput label="GitHub" icon={Github} value={githubUrl} onChange={setGithubUrl} placeholder="https://github.com/username" type="url" />
+          <FormInput label="LinkedIn" icon={Linkedin} value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/in/username" type="url" />
         </div>
       </GlassCard>
 
@@ -423,22 +426,37 @@ export default function ProfilePage() {
           <div className="flex gap-2 mt-auto">
             <div className="relative flex-1">
               <input
-                list="all-skills-list"
+                id="offered-skill-input"
+                list="all-skills-offered"
                 value={offeredSkillInput}
                 onChange={(e) => setOfferedSkillInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddSkill(offeredSkillInput, 'offered'); }}
-                placeholder="Add a skill you can teach..."
-                className="w-full pl-3 pr-4 py-2 rounded-xl bg-[var(--bg-surface-solid)] border border-dashed border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-emerald/50 focus:border-solid transition-all"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSkill(offeredSkillInput, 'offered'); } }}
+                placeholder="Type a skill you can teach..."
+                className="w-full pl-3 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-dashed border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-emerald/50 focus:border-solid transition-all"
               />
+              <datalist id="all-skills-offered">
+                {ALL_SKILLS.map((skill) => (
+                  <option key={skill.id} value={skill.name} />
+                ))}
+              </datalist>
             </div>
             <button
-              onClick={() => handleAddSkill(offeredSkillInput, 'offered')}
-              disabled={!offeredSkillInput.trim() || isAddingSkill}
+              type="button"
+              onClick={() => {
+                if (!offeredSkillInput.trim()) {
+                  document.getElementById('offered-skill-input')?.focus();
+                  return;
+                }
+                handleAddSkill(offeredSkillInput, 'offered');
+              }}
+              disabled={isAddingSkill}
               className={cn(
-                'px-3 py-2 rounded-xl text-sm border transition-all',
-                offeredSkillInput.trim() && !isAddingSkill
-                  ? 'bg-accent-emerald/10 border-accent-emerald/30 text-accent-emerald hover:bg-accent-emerald/20'
-                  : 'bg-[var(--bg-surface-solid)] border-[var(--glass-border)] text-[var(--text-muted)] cursor-not-allowed'
+                'px-4 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer',
+                isAddingSkill
+                  ? 'bg-[var(--bg-surface-solid)] border-[var(--glass-border)] text-[var(--text-muted)] cursor-not-allowed'
+                  : offeredSkillInput.trim()
+                    ? 'bg-accent-emerald/10 border-accent-emerald/30 text-accent-emerald hover:bg-accent-emerald/20 hover:scale-105 active:scale-95'
+                    : 'bg-[var(--bg-surface-solid)] border-[var(--glass-border)] text-[var(--text-muted)] hover:border-accent-emerald/30 hover:text-accent-emerald'
               )}
             >
               {isAddingSkill ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
@@ -467,27 +485,37 @@ export default function ProfilePage() {
           <div className="flex gap-2 mt-auto">
             <div className="relative flex-1">
               <input
-                list="all-skills-list"
+                id="desired-skill-input"
+                list="all-skills-desired"
                 value={desiredSkillInput}
                 onChange={(e) => setDesiredSkillInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddSkill(desiredSkillInput, 'desired'); }}
-                placeholder="Add a skill you want to learn..."
-                className="w-full pl-3 pr-4 py-2 rounded-xl bg-[var(--bg-surface-solid)] border border-dashed border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:border-solid transition-all"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSkill(desiredSkillInput, 'desired'); } }}
+                placeholder="Type a skill you want to learn..."
+                className="w-full pl-3 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-dashed border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:border-solid transition-all"
               />
-              <datalist id="all-skills-list">
+              <datalist id="all-skills-desired">
                 {ALL_SKILLS.map((skill) => (
                   <option key={skill.id} value={skill.name} />
                 ))}
               </datalist>
             </div>
             <button
-              onClick={() => handleAddSkill(desiredSkillInput, 'desired')}
-              disabled={!desiredSkillInput.trim() || isAddingSkill}
+              type="button"
+              onClick={() => {
+                if (!desiredSkillInput.trim()) {
+                  document.getElementById('desired-skill-input')?.focus();
+                  return;
+                }
+                handleAddSkill(desiredSkillInput, 'desired');
+              }}
+              disabled={isAddingSkill}
               className={cn(
-                'px-3 py-2 rounded-xl text-sm border transition-all',
-                desiredSkillInput.trim() && !isAddingSkill
-                  ? 'bg-accent-violet/10 border-accent-violet/30 text-accent-violet hover:bg-accent-violet/20'
-                  : 'bg-[var(--bg-surface-solid)] border-[var(--glass-border)] text-[var(--text-muted)] cursor-not-allowed'
+                'px-4 py-2.5 rounded-xl text-sm font-medium border transition-all cursor-pointer',
+                isAddingSkill
+                  ? 'bg-[var(--bg-surface-solid)] border-[var(--glass-border)] text-[var(--text-muted)] cursor-not-allowed'
+                  : desiredSkillInput.trim()
+                    ? 'bg-accent-violet/10 border-accent-violet/30 text-accent-violet hover:bg-accent-violet/20 hover:scale-105 active:scale-95'
+                    : 'bg-[var(--bg-surface-solid)] border-[var(--glass-border)] text-[var(--text-muted)] hover:border-accent-violet/30 hover:text-accent-violet'
               )}
             >
               {isAddingSkill ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
@@ -495,6 +523,48 @@ export default function ProfilePage() {
           </div>
         </GlassCard>
       </div>
+
+      {/* Danger Zone — Delete Account */}
+      <GlassCard padding="lg" className="border-red-500/20 bg-red-500/[0.03]">
+        <h3 className="font-heading font-semibold text-sm uppercase tracking-wider text-red-400 mb-2 flex items-center gap-2">
+          <AlertTriangle size={15} /> Danger Zone
+        </h3>
+        <p className="text-sm text-[var(--text-muted)] mb-4">
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </p>
+        <button
+          id="delete-account-btn"
+          onClick={async () => {
+            const confirmed = window.confirm(
+              'Are you absolutely sure? This will permanently delete your account, all your skills, sessions, and reviews. This cannot be undone.'
+            );
+            if (!confirmed) return;
+
+            setDeleting(true);
+            try {
+              const res = await authFetch('/api/account/delete', { method: 'DELETE' });
+              if (!res.ok) {
+                const data = await res.json();
+                toast.error(data.error || 'Failed to delete account');
+                return;
+              }
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              toast.success('Account deleted. Goodbye!');
+              window.location.href = '/signup';
+            } catch (err) {
+              console.error('Delete account error:', err);
+              toast.error('Something went wrong. Please try again.');
+            } finally {
+              setDeleting(false);
+            }
+          }}
+          disabled={deleting}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {deleting ? <><Loader2 size={16} className="animate-spin" /> Deleting...</> : <><Trash2 size={16} /> Delete My Account</>}
+        </button>
+      </GlassCard>
 
       {/* Bottom save button */}
       <div className="flex justify-end pb-8">

@@ -8,6 +8,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { ROUTES } from '@/lib/constants';
 import { Search, Bell, Coins, UserPlus, Star, CalendarCheck, CheckCheck, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -76,7 +77,10 @@ export function TopBar() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Theme toggle */}
+          <ThemeToggle />
+
           {/* Credits */}
           <Link href={ROUTES.dashboard} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent-amber/10 border border-accent-amber/20 hover:bg-accent-amber/20 transition-all">
             <Coins size={16} className="text-accent-amber" />

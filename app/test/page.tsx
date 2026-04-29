@@ -8,7 +8,7 @@ type LogEntry = { msg: string; type: "info" | "success" | "error" | "header" };
 export default function TestPage() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const addLog = (msg: string, type: LogEntry["type"] = "info") =>
     setLog((prev) => [...prev, { msg, type }]);

@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Bot, X, Send, User, Sparkles, Loader2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { authFetch } from '@/lib/authFetch';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -146,9 +147,8 @@ export function ChatbotWidget() {
     setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
     try {
-      const res = await fetch('/api/ai/chat', {
+      const res = await authFetch('/api/ai/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
         }),

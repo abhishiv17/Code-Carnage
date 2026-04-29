@@ -8,6 +8,7 @@ import { GradientButton } from '@/components/shared/GradientButton';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import { ArrowRightLeft, Sparkles, Loader2, CheckCircle2, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { authFetch } from '@/lib/authFetch';
 
 interface MatchResult {
   peer_id: string;
@@ -43,9 +44,8 @@ export default function MatchesPage() {
 
       for (const skill of desiredSkills) {
         try {
-          const res = await fetch('/api/ai/match', {
+          const res = await authFetch('/api/ai/match', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ desiredSkill: skill.skill_name }),
           });
 
@@ -104,9 +104,8 @@ export default function MatchesPage() {
     setRequestingSession(matchKey);
 
     try {
-      const res = await fetch('/api/sessions/create', {
+      const res = await authFetch('/api/sessions/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacherId: match.peer_id }),
       });
 

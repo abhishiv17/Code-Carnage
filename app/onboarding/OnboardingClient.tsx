@@ -41,67 +41,79 @@ export default function OnboardingPage() {
 
   const handleSaveSkills = async () => {
     setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('Please log in first');
-      router.push(ROUTES.login);
-      return;
-    }
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please log in first');
+        router.push(ROUTES.login);
+        return;
+      }
 
-    const skillRows = [
-      ...skillsHave.map((s) => ({ user_id: user.id, skill_name: s, type: 'offered' as const })),
-      ...skillsWant.map((s) => ({ user_id: user.id, skill_name: s, type: 'desired' as const })),
-    ];
+      const skillRows = [
+        ...skillsHave.map((s) => ({ user_id: user.id, skill_name: s, type: 'offered' as const })),
+        ...skillsWant.map((s) => ({ user_id: user.id, skill_name: s, type: 'desired' as const })),
+      ];
 
-    const { error } = await supabase.from('skills').insert(skillRows);
-    if (error) {
-      toast.error('Failed to save skills: ' + error.message);
-      setSaving(false);
-    } else {
-      toast.success('Skills saved!');
-      setStep('profile');
+      const { error } = await supabase.from('skills').insert(skillRows);
+      if (error) {
+        toast.error('Failed to save skills: ' + error.message);
+      } else {
+        toast.success('Skills saved!');
+        setStep('profile');
+      }
+    } catch (err) {
+      console.error('Save skills error:', err);
+      toast.error('Something went wrong saving skills. Please try again.');
+    } finally {
       setSaving(false);
     }
   };
 
   const handleSaveProfile = async () => {
     setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push(ROUTES.login);
-      return;
-    }
-
-    const updates: Record<string, unknown> = {};
-    if (fullName.trim()) updates.full_name = fullName.trim();
-    if (collegeName.trim()) updates.college_name = collegeName.trim();
-    if (degree) updates.degree = degree;
-    if (branch.trim()) updates.branch = branch.trim();
-    if (yearOfStudy) updates.year_of_study = parseInt(yearOfStudy);
-    if (city.trim()) updates.city = city.trim();
-    if (gender) updates.gender = gender;
-    if (bio.trim()) updates.bio = bio.trim();
-
-    if (Object.keys(updates).length > 0) {
-      updates.profile_completed = true;
-      const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
-      if (error) {
-        toast.error('Failed to save profile: ' + error.message);
-        setSaving(false);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please log in first');
+        router.push(ROUTES.login);
         return;
       }
-      toast.success('Profile saved! Welcome to SkillSwap 🎉');
-    } else {
-      toast.success('Welcome to SkillSwap 🎉');
+
+      const updates: Record<string, unknown> = {};
+      if (fullName.trim()) updates.full_name = fullName.trim();
+      if (collegeName.trim()) updates.college_name = collegeName.trim();
+      if (degree) updates.degree = degree;
+      if (branch.trim()) updates.branch = branch.trim();
+      if (yearOfStudy) updates.year_of_study = parseInt(yearOfStudy);
+      if (city.trim()) updates.city = city.trim();
+      if (gender) updates.gender = gender;
+      if (bio.trim()) updates.bio = bio.trim();
+
+      if (Object.keys(updates).length > 0) {
+        updates.profile_completed = true;
+        const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+        if (error) {
+          toast.error('Failed to save profile: ' + error.message);
+          return;
+        }
+        toast.success('Profile saved! Welcome to SkillSwap 🎉');
+      } else {
+        toast.success('Welcome to SkillSwap 🎉');
+      }
+      window.location.href = ROUTES.dashboard;
+    } catch (err) {
+      console.error('Save profile error:', err);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    router.push(ROUTES.dashboard);
   };
 
   const handleSkipProfile = () => {
     toast.success('Welcome to SkillSwap 🎉 You can fill your profile later.');
-    router.push(ROUTES.dashboard);
+    window.location.href = ROUTES.dashboard;
   };
 
   const currentSkills = step === 'have' ? skillsHave : skillsWant;

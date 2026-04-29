@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, createContext, useContext } from 'react';
+import { useEffect, useState, useCallback, createContext, useContext, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -51,8 +51,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // We only want to instantiate the client once per provider lifecycle
   const [supabase] = useState(() => createClient());
+  const profileFetchedRef = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const [{ data: profileData }, { data: skillsData }] = await Promise.all([
@@ -69,38 +69,35 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id, fetchProfile]);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        // Use getSession() for instant local read (no network call)
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) console.error("Auth error:", error);
-        
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-        }
-      } catch (err) {
-        console.error("Failed to initialize user:", err);
-      } finally {
-        setLoading(false);
+    // getSession() reads from localStorage — instant, no network call.
+    // This is the ONLY thing that blocks `loading`. Everything else is background.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        // Fire profile fetch in background — do NOT await
+        profileFetchedRef.current = true;
+        fetchProfile(session.user.id);
       }
-    };
-
-    init();
+      // Auth is determined. Unblock the entire app.
+      setLoading(false);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (session?.user) {
-            setUser(session.user);
-            await fetchProfile(session.user.id);
-          } else {
-            setUser(null);
-            setProfile(null);
-            setSkills([]);
-          }
-        } catch (err) {
-          console.error("Auth state change error:", err);
+      (event, session) => {
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          setUser(null);
+          setProfile(null);
+          setSkills([]);
+          profileFetchedRef.current = false;
+          return;
+        }
+
+        setUser(session.user);
+
+        // Fetch profile on sign-in. Skip INITIAL_SESSION since init() handles it.
+        if (event === 'SIGNED_IN') {
+          profileFetchedRef.current = true;
+          fetchProfile(session.user.id);
         }
       }
     );
@@ -129,3 +126,4 @@ export function useUser(): UseUserReturn {
   }
   return context;
 }
+

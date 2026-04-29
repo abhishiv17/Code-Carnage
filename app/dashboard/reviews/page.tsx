@@ -10,6 +10,7 @@ import { GradientButton } from '@/components/shared/GradientButton';
 import { Star, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { authFetch } from '@/lib/authFetch';
 
 interface ReviewRow {
   id: string;
@@ -27,7 +28,7 @@ interface ProfileMap {
 
 export default function ReviewsPage() {
   const { user } = useUser();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const { data, isLoading: loading } = useQuery({
     queryKey: ['reviews', user?.id],
@@ -91,9 +92,8 @@ export default function ReviewsPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/reviews', {
+      const res = await authFetch('/api/reviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: 'placeholder-session-id', // TODO: User needs to select a session
           rating: newRating,
