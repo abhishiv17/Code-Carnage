@@ -73,6 +73,27 @@ export default function LoginPage() {
       toast.error(message);
     } finally {
       setLoading(false);
+<<<<<<< HEAD
+=======
+      return;
+    }
+
+    // Password login
+    if (!password) {
+      toast.error('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+    } else {
+      toast.success('Welcome back!');
+      router.refresh();
+      window.location.href = ROUTES.dashboard;
+>>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83
     }
   };
 

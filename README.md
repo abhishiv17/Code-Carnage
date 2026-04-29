@@ -15,48 +15,48 @@
 ## ✨ Features
 
 ### 🏠 Landing Page
-- Stunning glassmorphic landing page with dark mode support
-- Animated statistics, feature cards, and smooth scroll navigation
-- Responsive mobile-first design with hamburger menu
+- [x] Stunning glassmorphic landing page with dark mode support
+- [x] Animated statistics, feature cards, and smooth scroll navigation
+- [x] Responsive mobile-first design with hamburger menu
 
 ### 🔐 Authentication
-- Email/password sign-up and login via Supabase Auth
-- GitHub OAuth integration
-- Magic link authentication
-- Session-based auth with middleware protection
-- Guided onboarding flow (skill selection + profile setup)
+- [x] Email/password sign-up and login via Supabase Auth
+- [x] GitHub OAuth integration
+- [x] Magic link authentication
+- [x] Session-based auth with middleware protection
+- [x] Guided onboarding flow (skill selection + profile setup)
 
 ### 📊 Dashboard
-- **Marketplace** — Browse and discover skill listings from other students
-- **AI Matches** — Groq-powered AI matching engine finds compatible skill-swap partners
-- **Sessions** — View pending, active, and completed sessions
-- **Profile** — Full profile editor with academic info, social links, and preferences
-- **Reviews** — Rate and review your peers after sessions
-- **Leaderboard** — Top contributors ranked by sessions, ratings, and credits
+- [x] **Marketplace** — Browse and discover skill listings from other students
+- [x] **AI Matches** — Groq-powered AI matching engine finds compatible skill-swap partners
+- [x] **Sessions** — View pending, active, and completed sessions
+- [x] **Profile** — Full profile editor with academic info, social links, and preferences
+- [x] **Reviews** — Rate and review your peers after sessions
+- [x] **Leaderboard** — Top contributors ranked by sessions, ratings, and credits
 
 ### 🤖 AI-Powered Features
-- **Smart Matchmaker** — AI recommends specific peers based on skills, college, city, and preferences
-- **AI Chatbot** — Floating assistant powered by Groq (Llama 3.1) for:
-  - Finding skill matches ("Who can teach me React?")
-  - Platform guidance ("How do credits work?")
-  - Pre-session prep ("Give me a crash course on Python")
-  - Icebreaker generation for shy students
+- [x] **Smart Matchmaker** — AI recommends specific peers based on skills, college, city, and preferences
+- [x] **AI Chatbot** — Floating assistant powered by Groq (Llama 3.1) for:
+  - [x] Finding skill matches ("Who can teach me React?")
+  - [x] Platform guidance ("How do credits work?")
+  - [x] Pre-session prep ("Give me a crash course on Python")
+  - [x] Icebreaker generation for shy students
 
 ### 🔔 Real-Time Notifications
-- Supabase Realtime-powered live notification system
-- Instant alerts when someone requests a session with you
-- Notification dropdown with mark-as-read and clear-all actions
-- Type-based icons and relative timestamps
+- [x] Supabase Realtime-powered live notification system
+- [x] Instant alerts when someone requests a session with you
+- [x] Notification dropdown with mark-as-read and clear-all actions
+- [x] Type-based icons and relative timestamps
 
 ### 💰 Credit Economy
-- Start with 1 credit
-- Teaching a session = +1 credit earned
-- Learning a session = -1 credit spent
-- Credit balance displayed across dashboard
+- [x] Start with 1 credit
+- [x] Teaching a session = +1 credit earned
+- [x] Learning a session = -1 credit spent
+- [x] Credit balance displayed across dashboard
 
 ### 📹 WebRTC Video Calls
-- Peer-to-peer video/audio sessions via WebRTC signaling
-- Session room pages with join functionality
+- [x] Peer-to-peer video/audio sessions via WebRTC signaling
+- [x] Session room pages with join functionality
 
 ---
 
@@ -222,8 +222,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_ORG/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/abhishiv17/Code-Carnage.git
+cd Code-Carnage
 
 # 2. Install dependencies
 npm install

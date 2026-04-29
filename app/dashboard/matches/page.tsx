@@ -328,7 +328,7 @@ export default function MatchesPage() {
                 <div className="flex items-center gap-3 mb-5">
                   <Image
                     src={avatarUrl}
-                    alt={match.username}
+                    alt={match.username || 'User avatar'}
                     width={56}
                     height={56}
                     className="w-14 h-14 rounded-full bg-[var(--bg-surface-solid)]"

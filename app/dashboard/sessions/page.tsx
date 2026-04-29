@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
@@ -9,6 +10,7 @@ import { SkillBadge } from '@/components/shared/SkillBadge';
 import { Calendar, Clock, Coins, Video, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface SessionRow {
   id: string;
@@ -25,6 +27,7 @@ interface ProfileMap {
 
 export default function SessionsPage() {
   const { user } = useUser();
+<<<<<<< HEAD
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileMap>({});
   const [loading, setLoading] = useState(true);
@@ -61,6 +64,75 @@ export default function SessionsPage() {
   useEffect(() => {
     fetchSessions();
   }, [user]);
+=======
+  const supabase = createClient();
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+
+  const { data, isLoading: loading, refetch } = useQuery({
+    queryKey: ['sessions', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .or(`teacher_id.eq.${user!.id},learner_id.eq.${user!.id}`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch sessions:', error);
+        toast.error('Failed to load sessions');
+        throw error;
+      }
+
+      let profileMap: ProfileMap = {};
+      if (data && data.length > 0) {
+        // Fetch profiles for all peer IDs
+        const peerIds = Array.from(new Set(
+          data.flatMap((s) => [s.teacher_id, s.learner_id]).filter((id) => id !== user!.id)
+        ));
+        if (peerIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .in('id', peerIds);
+          
+          if (profilesError) {
+             console.error('Failed to fetch peer profiles:', profilesError);
+          }
+            
+          profilesData?.forEach((p) => { profileMap[p.id] = { username: p.username }; });
+        }
+      }
+      return { sessions: (data || []) as SessionRow[], profiles: profileMap };
+    },
+    staleTime: 60 * 1000, // 1 minute
+  });
+
+  const sessions = data?.sessions || [];
+  const profiles = data?.profiles || {};
+
+  const handleAcceptSession = async (sessionId: string) => {
+    setAcceptingId(sessionId);
+    try {
+      const res = await fetch('/api/sessions/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      const resData = await res.json();
+      if (!res.ok) {
+        toast.error(resData.error || 'Failed to accept session');
+        return;
+      }
+      toast.success('Session accepted! You can now join the call.');
+      refetch();
+    } catch (err) {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+>>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83
 
   const acceptSession = async (sessionId: string) => {
     setAcceptingId(sessionId);
@@ -173,6 +245,7 @@ export default function SessionsPage() {
                       </Link>
                     </GradientButton>
                   )}
+<<<<<<< HEAD
                   {session.status === 'pending' && isTeaching && (
                     <GradientButton 
                       size="sm" 
@@ -191,6 +264,24 @@ export default function SessionsPage() {
                     <div className="text-xs text-[var(--text-muted)] italic px-2">
                       Waiting for peer to accept...
                     </div>
+=======
+
+                  {session.status === 'pending' && isTeaching && (
+                    <GradientButton 
+                      size="sm" 
+                      onClick={() => handleAcceptSession(session.id)}
+                      disabled={acceptingId === session.id}
+                    >
+                      {acceptingId === session.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                      Accept
+                    </GradientButton>
+                  )}
+                  
+                  {session.status === 'pending' && !isTeaching && (
+                    <span className="text-xs text-[var(--text-muted)] italic px-3 py-1.5 bg-[var(--bg-surface-solid)] rounded-lg border border-[var(--glass-border)]">
+                      Waiting...
+                    </span>
+>>>>>>> 1b851afdfcf73d0312eff70d76e58b2686fe4f83
                   )}
                 </GlassCard>
               );

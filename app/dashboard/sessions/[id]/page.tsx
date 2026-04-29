@@ -22,8 +22,7 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
-import Link from 'next/link';
-import { ROUTES } from '@/lib/constants';
+import { toast } from 'sonner';
 
 export default function VideoRoomPage() {
   const { id } = useParams();
@@ -43,11 +42,16 @@ export default function VideoRoomPage() {
     if (!user || !sessionId) return;
     const fetchSession = async () => {
       const supabase = createClient();
-      const { data: session } = await supabase
+      const { data: session, error: sessionErr } = await supabase
         .from('sessions')
         .select('*')
         .eq('id', sessionId)
         .single();
+
+      if (sessionErr) {
+        console.error('Failed to fetch session:', sessionErr);
+        toast.error('Failed to load session details');
+      }
 
       if (session) {
         const teaching = session.teacher_id === user.id;
@@ -315,9 +319,18 @@ export default function VideoRoomPage() {
         {/* Hang up */}
         <button
           id="btn-hangup"
-          onClick={() => {
+          onClick={async () => {
             hangUp();
-            router.push(ROUTES.reviews);
+            try {
+              await fetch('/api/sessions/end', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId }),
+              });
+            } catch (err) {
+              console.error('Failed to end session:', err);
+            }
+            router.push(`/dashboard/reviews?sessionId=${sessionId}`);
           }}
           className="p-4 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all"
         >

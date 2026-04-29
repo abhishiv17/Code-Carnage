@@ -154,6 +154,10 @@ export function ChatbotWidget() {
         }),
       });
 
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
       if (!res.body) throw new Error('No stream');
 
       const reader = res.body.getReader();

@@ -139,7 +139,7 @@ export function TopBar() {
                     <div className="px-4 py-10 text-center text-sm text-[var(--text-muted)]">
                       <Bell size={28} className="mx-auto mb-2 opacity-15" />
                       <p>No notifications yet</p>
-                      <p className="text-[10px] mt-1 opacity-60">They'll appear here in real-time</p>
+                      <p className="text-[10px] mt-1 opacity-60">They&apos;ll appear here in real-time</p>
                     </div>
                   ) : (
                     notifications.map((notification) => (
