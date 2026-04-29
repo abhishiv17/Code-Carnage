@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     // Fetch usernames for matched user_ids
-    const userIds = [...new Set(skillsData.map((s) => s.user_id))];
+    const userIds = Array.from(new Set(skillsData.map((s) => s.user_id)));
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, username')
