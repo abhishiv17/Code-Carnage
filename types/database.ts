@@ -13,6 +13,22 @@ export interface Database {
         Row: {
           id: string
           username: string | null
+          full_name: string | null
+          bio: string | null
+          phone: string | null
+          gender: string | null
+          age: number | null
+          college_name: string | null
+          degree: string | null
+          branch: string | null
+          year_of_study: number | null
+          graduation_year: number | null
+          city: string | null
+          github_url: string | null
+          linkedin_url: string | null
+          preferred_mode: string | null
+          languages: string[] | null
+          profile_completed: boolean
           credits: number
           average_rating: number | null
           total_sessions: number | null
@@ -21,6 +37,22 @@ export interface Database {
         Insert: {
           id: string
           username?: string | null
+          full_name?: string | null
+          bio?: string | null
+          phone?: string | null
+          gender?: string | null
+          age?: number | null
+          college_name?: string | null
+          degree?: string | null
+          branch?: string | null
+          year_of_study?: number | null
+          graduation_year?: number | null
+          city?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          preferred_mode?: string | null
+          languages?: string[] | null
+          profile_completed?: boolean
           credits?: number
           average_rating?: number | null
           total_sessions?: number | null
@@ -29,6 +61,22 @@ export interface Database {
         Update: {
           id?: string
           username?: string | null
+          full_name?: string | null
+          bio?: string | null
+          phone?: string | null
+          gender?: string | null
+          age?: number | null
+          college_name?: string | null
+          degree?: string | null
+          branch?: string | null
+          year_of_study?: number | null
+          graduation_year?: number | null
+          city?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          preferred_mode?: string | null
+          languages?: string[] | null
+          profile_completed?: boolean
           credits?: number
           average_rating?: number | null
           total_sessions?: number | null

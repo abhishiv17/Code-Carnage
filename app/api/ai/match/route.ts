@@ -32,23 +32,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ matches: [] }); // No one offering skills yet
     }
 
-    // Fetch usernames for matched user_ids
+    // Fetch profiles with extended info for matched user_ids
     const userIds = Array.from(new Set(skillsData.map((s) => s.user_id)));
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, username')
+      .select('id, username, college_name, city, preferred_mode, languages')
       .in('id', userIds);
 
     const profileMap = new Map(
-      (profiles || []).map((p) => [p.id, p.username || 'Unknown'])
+      (profiles || []).map((p) => [p.id, p])
     );
 
-    // Format for the AI
-    const availablePeers = skillsData.map((skill) => ({
-      peer_id: skill.user_id,
-      username: profileMap.get(skill.user_id) || 'Unknown',
-      offered_skill: skill.skill_name,
-    }));
+    // Format for the AI with extra context
+    const availablePeers = skillsData.map((skill) => {
+      const peerProfile = profileMap.get(skill.user_id);
+      return {
+        peer_id: skill.user_id,
+        username: peerProfile?.username || 'Unknown',
+        offered_skill: skill.skill_name,
+        college: peerProfile?.college_name || undefined,
+        city: peerProfile?.city || undefined,
+        preferred_mode: peerProfile?.preferred_mode || undefined,
+        languages: peerProfile?.languages || undefined,
+      };
+    });
 
     // Call Groq AI
     const matchResults = await findMatches(desiredSkill, availablePeers);
