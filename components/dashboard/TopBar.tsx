@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useUser } from '@/hooks/useUser';
 import { Search, Bell, Coins } from 'lucide-react';
 
@@ -45,9 +46,11 @@ export function TopBar() {
           </button>
 
           {/* User avatar */}
-          <img
+          <Image
             src={avatarUrl}
             alt={profile?.username || 'User'}
+            width={32}
+            height={32}
             className="w-8 h-8 rounded-full bg-[var(--bg-surface-solid)] cursor-pointer hover:ring-2 hover:ring-accent-violet/30 transition-all"
           />
         </div>

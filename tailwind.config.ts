@@ -9,8 +9,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        heading: ['Sora', 'system-ui', 'sans-serif'],
-        body: ['DM Sans', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-sora)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

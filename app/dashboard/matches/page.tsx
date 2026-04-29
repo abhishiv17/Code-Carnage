@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
@@ -143,9 +144,11 @@ export default function MatchesPage() {
 
                 {/* User info */}
                 <div className="flex items-center gap-3 mb-5">
-                  <img
+                  <Image
                     src={avatarUrl}
                     alt={match.username}
+                    width={56}
+                    height={56}
                     className="w-14 h-14 rounded-full bg-[var(--bg-surface-solid)]"
                   />
                   <div>

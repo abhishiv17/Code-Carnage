@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
@@ -149,7 +150,7 @@ export default function ReviewsPage() {
               return (
                 <GlassCard key={review.id}>
                   <div className="flex items-start gap-3">
-                    <img src={avatarUrl} alt={reviewerName} className="w-10 h-10 rounded-full bg-[var(--bg-surface-solid)]" />
+                    <Image src={avatarUrl} alt={reviewerName} width={40} height={40} className="w-10 h-10 rounded-full bg-[var(--bg-surface-solid)]" />
                     <div className="flex-1">
                       <span className="text-sm font-semibold text-[var(--text-primary)]">{reviewerName}</span>
                       <div className="flex gap-0.5 mb-2 mt-1">
@@ -183,7 +184,7 @@ export default function ReviewsPage() {
               return (
                 <GlassCard key={review.id} className="opacity-80">
                   <div className="flex items-start gap-3">
-                    <img src={avatarUrl} alt={revieweeName} className="w-10 h-10 rounded-full bg-[var(--bg-surface-solid)]" />
+                    <Image src={avatarUrl} alt={revieweeName} width={40} height={40} className="w-10 h-10 rounded-full bg-[var(--bg-surface-solid)]" />
                     <div className="flex-1">
                       <span className="text-sm font-semibold text-[var(--text-secondary)]">To {revieweeName}</span>
                       <div className="flex gap-0.5 mb-2 mt-1">

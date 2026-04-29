@@ -112,7 +112,7 @@
     scroll-behavior: smooth;
   }
   body {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
     background: var(--bg-base);
     color: var(--text-primary);
     overflow-x: hidden;
@@ -121,7 +121,7 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Sora', system-ui, sans-serif;
+    font-family: var(--font-sora), system-ui, sans-serif;
   }
   ::selection {
     background: hsla(128, 17%, 56%, 0.25);

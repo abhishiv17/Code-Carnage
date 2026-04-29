@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import type { MarketplaceListing } from '@/lib/mock-data';
@@ -15,9 +16,11 @@ export function SkillCard({ listing }: SkillCardProps) {
     <GlassCard hover className="flex flex-col h-full group">
       {/* Header: user info */}
       <div className="flex items-center gap-3 mb-4">
-        <img
+        <Image
           src={listing.user.avatar}
           alt={listing.user.name}
+          width={40}
+          height={40}
           className="w-10 h-10 rounded-full bg-[var(--bg-surface-solid)]"
         />
         <div className="flex-1 min-w-0">

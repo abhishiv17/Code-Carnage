@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { APP_NAME, ROUTES } from '@/lib/constants';
 import { useUser } from '@/hooks/useUser';
@@ -77,9 +78,11 @@ export function Sidebar() {
       {/* User section */}
       <div className="px-3 py-4 border-t border-[var(--glass-border)]">
         <div className={cn('flex items-center gap-3 px-2', collapsed && 'justify-center')}>
-          <img
+          <Image
             src={avatarUrl}
             alt={profile?.username || 'User'}
+            width={32}
+            height={32}
             className="w-8 h-8 rounded-full bg-[var(--bg-surface-solid)]"
           />
           {!collapsed && (

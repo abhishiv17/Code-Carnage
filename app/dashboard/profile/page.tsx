@@ -1,6 +1,7 @@
 'use client';
 
 import { useUser } from '@/hooks/useUser';
+import Image from 'next/image';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import { Coins, BookOpen, Star, Calendar, Loader2 } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function ProfilePage() {
       {/* Profile card */}
       <GlassCard gradient padding="lg">
         <div className="flex items-start gap-5">
-          <img src={avatarUrl} alt={profile?.username || 'User'} className="w-20 h-20 rounded-2xl bg-[var(--bg-surface-solid)]" />
+          <Image src={avatarUrl} alt={profile?.username || 'User'} width={80} height={80} className="w-20 h-20 rounded-2xl bg-[var(--bg-surface-solid)]" />
           <div className="flex-1">
             <h2 className="font-heading text-xl font-bold text-[var(--text-primary)] mb-1">
               {profile?.username || 'Unknown'}
