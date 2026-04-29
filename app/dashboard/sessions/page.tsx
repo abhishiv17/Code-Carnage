@@ -1,14 +1,96 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { SkillBadge } from '@/components/shared/SkillBadge';
-import { MOCK_SESSIONS, CURRENT_USER } from '@/lib/mock-data';
-import { Calendar, Clock, Coins, Video, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, Coins, Video, CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+interface SessionRow {
+  id: string;
+  teacher_id: string;
+  learner_id: string;
+  status: string;
+  created_at: string;
+  ended_at: string | null;
+}
+
+interface ProfileMap {
+  [id: string]: { username: string };
+}
+
 export default function SessionsPage() {
-  const upcoming = MOCK_SESSIONS.filter((s) => s.status === 'upcoming');
-  const completed = MOCK_SESSIONS.filter((s) => s.status === 'completed');
+  const { user } = useUser();
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [profiles, setProfiles] = useState<ProfileMap>({});
+  const [loading, setLoading] = useState(true);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchSessions = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('sessions')
+        .select('*')
+        .or(`teacher_id.eq.${user.id},learner_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (data && data.length > 0) {
+        setSessions(data);
+        // Fetch profiles for all peer IDs
+        const peerIds = Array.from(new Set(
+          data.flatMap((s) => [s.teacher_id, s.learner_id]).filter((id) => id !== user.id)
+        ));
+        if (peerIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .in('id', peerIds);
+          const map: ProfileMap = {};
+          profilesData?.forEach((p) => { map[p.id] = { username: p.username }; });
+          setProfiles(map);
+        }
+      }
+      setLoading(false);
+    };
+    fetchSessions();
+  }, [user]);
+
+  const upcoming = sessions.filter((s) => s.status === 'pending' || s.status === 'active');
+  const completed = sessions.filter((s) => s.status === 'completed');
+
+  const acceptSession = async (sessionId: string) => {
+    setAcceptingId(sessionId);
+    try {
+      const res = await fetch('/api/sessions/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!res.ok) throw new Error('Failed to accept');
+      
+      setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, status: 'active' } : s));
+      toast.success('Session accepted! You can now join.');
+    } catch {
+      toast.error('Failed to accept session');
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 size={24} className="animate-spin text-accent-violet" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -25,65 +107,90 @@ export default function SessionsPage() {
       <div>
         <h2 className="font-heading text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
           <Calendar size={18} className="text-accent-violet" />
-          Upcoming
+          Active / Pending
         </h2>
-        <div className="space-y-4">
-          {upcoming.map((session) => {
-            const isTeaching = session.teacher.id === CURRENT_USER.id;
-            const peer = isTeaching ? session.learner : session.teacher;
-            const date = new Date(session.scheduledAt);
+        {upcoming.length === 0 ? (
+          <p className="text-sm text-[var(--text-muted)] py-4">No active sessions right now.</p>
+        ) : (
+          <div className="space-y-4">
+            {upcoming.map((session) => {
+              const isTeaching = session.teacher_id === user!.id;
+              const peerId = isTeaching ? session.learner_id : session.teacher_id;
+              const peerName = profiles[peerId]?.username || 'Unknown';
+              const date = new Date(session.created_at);
 
-            return (
-              <GlassCard key={session.id} hover className="flex items-center gap-5">
-                {/* Date block */}
-                <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-accent-violet/10 border border-accent-violet/20 shrink-0">
-                  <span className="text-xs font-semibold text-accent-violet uppercase">
-                    {date.toLocaleDateString('en-US', { month: 'short' })}
-                  </span>
-                  <span className="text-xl font-heading font-bold text-[var(--text-primary)]">
-                    {date.getDate()}
-                  </span>
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <SkillBadge skill={session.skill} variant={isTeaching ? 'have' : 'want'} />
-                    <span className={cn(
-                      'text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full',
-                      isTeaching
-                        ? 'bg-accent-emerald/10 text-accent-emerald'
-                        : 'bg-accent-violet/10 text-accent-violet'
-                    )}>
-                      {isTeaching ? 'Teaching' : 'Learning'}
+              return (
+                <GlassCard key={session.id} hover className="flex items-center gap-5">
+                  <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-accent-violet/10 border border-accent-violet/20 shrink-0">
+                    <span className="text-xs font-semibold text-accent-violet uppercase">
+                      {date.toLocaleDateString('en-US', { month: 'short' })}
+                    </span>
+                    <span className="text-xl font-heading font-bold text-[var(--text-primary)]">
+                      {date.getDate()}
                     </span>
                   </div>
-                  <p className="text-sm text-[var(--text-primary)] font-medium">
-                    with {peer.name}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} />
-                      {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} · {session.duration}min
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Coins size={12} className="text-accent-amber" />
-                      {session.creditsExchanged} credits
-                    </span>
-                  </div>
-                </div>
 
-                {/* Join button */}
-                <Link href={`/dashboard/sessions/${session.id}`}>
-                  <GradientButton size="sm">
-                    <Video size={14} />
-                    Join
-                  </GradientButton>
-                </Link>
-              </GlassCard>
-            );
-          })}
-        </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn(
+                        'text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full',
+                        isTeaching
+                          ? 'bg-accent-emerald/10 text-accent-emerald'
+                          : 'bg-accent-violet/10 text-accent-violet'
+                      )}>
+                        {isTeaching ? 'Teaching' : 'Learning'}
+                      </span>
+                      <span className={cn(
+                        'text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full',
+                        session.status === 'active'
+                          ? 'bg-accent-amber/10 text-accent-amber'
+                          : 'bg-[var(--bg-surface-solid)] text-[var(--text-muted)]'
+                      )}>
+                        {session.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-[var(--text-primary)] font-medium">
+                      with {peerName}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} />
+                        {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Coins size={12} className="text-accent-amber" />
+                        1 credit
+                      </span>
+                    </div>
+                  </div>
+
+                  {session.status === 'active' && (
+                    <Link href={`/dashboard/sessions/${session.id}`}>
+                      <GradientButton size="sm">
+                        <Video size={14} />
+                        Join
+                      </GradientButton>
+                    </Link>
+                  )}
+                  {session.status === 'pending' && isTeaching && (
+                    <GradientButton 
+                      size="sm" 
+                      onClick={() => acceptSession(session.id)}
+                      disabled={acceptingId === session.id}
+                    >
+                      {acceptingId === session.id ? <Loader2 size={14} className="animate-spin" /> : 'Accept Request'}
+                    </GradientButton>
+                  )}
+                  {session.status === 'pending' && !isTeaching && (
+                    <span className="text-xs text-[var(--text-muted)] italic">
+                      Waiting for teacher...
+                    </span>
+                  )}
+                </GlassCard>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Completed */}
@@ -92,45 +199,47 @@ export default function SessionsPage() {
           <CheckCircle2 size={18} className="text-accent-emerald" />
           Completed
         </h2>
-        <div className="space-y-4">
-          {completed.map((session) => {
-            const isTeaching = session.teacher.id === CURRENT_USER.id;
-            const peer = isTeaching ? session.learner : session.teacher;
-            const date = new Date(session.scheduledAt);
+        {completed.length === 0 ? (
+          <p className="text-sm text-[var(--text-muted)] py-4">No completed sessions yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {completed.map((session) => {
+              const isTeaching = session.teacher_id === user!.id;
+              const peerId = isTeaching ? session.learner_id : session.teacher_id;
+              const peerName = profiles[peerId]?.username || 'Unknown';
+              const date = new Date(session.created_at);
 
-            return (
-              <GlassCard key={session.id} className="flex items-center gap-5 opacity-75">
-                <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-[var(--bg-surface-solid)] shrink-0">
-                  <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">
-                    {date.toLocaleDateString('en-US', { month: 'short' })}
-                  </span>
-                  <span className="text-xl font-heading font-bold text-[var(--text-secondary)]">
-                    {date.getDate()}
-                  </span>
-                </div>
+              return (
+                <GlassCard key={session.id} className="flex items-center gap-5 opacity-75">
+                  <div className="flex flex-col items-center justify-center w-16 h-16 rounded-xl bg-[var(--bg-surface-solid)] shrink-0">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">
+                      {date.toLocaleDateString('en-US', { month: 'short' })}
+                    </span>
+                    <span className="text-xl font-heading font-bold text-[var(--text-secondary)]">
+                      {date.getDate()}
+                    </span>
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <SkillBadge skill={session.skill} variant="default" />
+                  <div className="flex-1 min-w-0">
                     <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[var(--bg-surface-solid)] text-[var(--text-muted)]">
                       {isTeaching ? 'Taught' : 'Learned'}
                     </span>
+                    <p className="text-sm text-[var(--text-secondary)] font-medium mt-1">
+                      with {peerName}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      {isTeaching ? '+1' : '-1'} credit
+                    </p>
                   </div>
-                  <p className="text-sm text-[var(--text-secondary)] font-medium">
-                    with {peer.name}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    {session.duration}min · {isTeaching ? '+' : '-'}{session.creditsExchanged} credits
-                  </p>
-                </div>
 
-                <Link href="/dashboard/reviews">
-                  <GradientButton variant="outline" size="sm">Review</GradientButton>
-                </Link>
-              </GlassCard>
-            );
-          })}
-        </div>
+                  <Link href="/dashboard/reviews">
+                    <GradientButton variant="outline" size="sm">Review</GradientButton>
+                  </Link>
+                </GlassCard>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

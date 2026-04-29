@@ -222,4 +222,9 @@
     background: var(--border-hover);
     border-radius: 3px;
   }
+
+  /* Mirror local video (selfie-cam) */
+  .mirror {
+    transform: scaleX(-1);
+  }
 }

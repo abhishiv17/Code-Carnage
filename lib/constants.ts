@@ -69,3 +69,10 @@ export const ALL_SKILLS = [
   { id: 'indian-cuisine', name: 'Indian Cuisine', category: 'cooking' },
   { id: 'italian-cuisine', name: 'Italian Cuisine', category: 'cooking' },
 ] as const;
+
+export const WEBRTC_CONFIG: RTCConfiguration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ],
+};
