@@ -7,7 +7,10 @@ import Image from 'next/image';
 import { useUser } from '@/hooks/useUser';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ROUTES } from '@/lib/constants';
-import { Search, Bell, Coins, UserPlus, Star, CalendarCheck, CheckCheck, Trash2, Loader2 } from 'lucide-react';
+import {
+  Search, Bell, Coins, UserPlus, Star, CalendarCheck,
+  CheckCheck, Trash2, Loader2, Video, X, Check
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -43,9 +46,13 @@ export function TopBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  // Track which notifications have been accepted (show "Join Session" instead of Accept/Decline)
+  const [acceptedSessionIds, setAcceptedSessionIds] = useState<Set<string>>(new Set());
+  // Track which notifications are fading out (for smooth removal animation)
+  const [fadingOut, setFadingOut] = useState<Set<string>>(new Set());
   const notificationRef = useRef<HTMLDivElement>(null);
   const { profile } = useUser();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, removeNotification } = useNotifications();
 
   const handleAccept = async (notificationId: string, sessionId: string) => {
     setAcceptingId(sessionId);
@@ -56,13 +63,16 @@ export function TopBar() {
         body: JSON.stringify({ sessionId })
       });
       if (res.ok) {
+        // Mark as read
         if (!notifications.find(n => n.id === notificationId)?.is_read) {
           markAsRead(notificationId);
         }
-        setShowNotifications(false);
-        router.push(`/dashboard/sessions/${sessionId}`);
+        // Transition this notification to "Join Session" state
+        setAcceptedSessionIds(prev => new Set(prev).add(notificationId));
+        toast.success('Session accepted! Click "Join Session" to start.');
       } else {
-        toast.error('Failed to accept session');
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Failed to accept session');
       }
     } catch {
       toast.error('Network error while accepting');
@@ -71,8 +81,24 @@ export function TopBar() {
   };
 
   const handleDecline = (notificationId: string) => {
-    markAsRead(notificationId);
-    toast.success('Session request declined');
+    // Start fade-out animation
+    setFadingOut(prev => new Set(prev).add(notificationId));
+    // After animation, actually remove from state/DB
+    setTimeout(() => {
+      removeNotification(notificationId);
+      setFadingOut(prev => {
+        const next = new Set(prev);
+        next.delete(notificationId);
+        return next;
+      });
+      toast.success('Session request declined');
+    }, 300);
+  };
+
+  const handleJoinSession = (notificationId: string, sessionId: string) => {
+    setShowNotifications(false);
+    // Navigate to the WebRTC call room
+    router.push(`/call/${sessionId}?peer=Peer&skill=Skill Session`);
   };
 
   useEffect(() => {
@@ -93,7 +119,7 @@ export function TopBar() {
   const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
   return (
-    <header className="sticky top-0 z-30 glass border-b border-[var(--glass-border)] px-6 py-3">
+    <header className="sticky top-0 z-50 glass border-b border-[var(--glass-border)] px-6 py-3">
       <div className="flex items-center justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
@@ -123,6 +149,7 @@ export function TopBar() {
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all"
               aria-label="Notifications"
+              id="notification-bell"
             >
               <Bell size={18} />
               {unreadCount > 0 && (
@@ -133,13 +160,15 @@ export function TopBar() {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 glass bg-[var(--bg-surface)] border border-[var(--glass-border)] rounded-xl shadow-2xl overflow-hidden z-50">
+              <div className="absolute right-0 mt-2 w-96 bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] rounded-2xl shadow-2xl overflow-hidden z-[60]"
+                style={{ backdropFilter: 'blur(20px)' }}
+              >
                 {/* Header */}
-                <div className="px-4 py-3 border-b border-[var(--glass-border)] flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">Notifications</h3>
+                <div className="px-5 py-3.5 border-b border-[var(--glass-border)] flex justify-between items-center bg-gradient-to-r from-accent-violet/[0.04] to-transparent">
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="text-sm font-heading font-bold text-[var(--text-primary)]">Notifications</h3>
                     {unreadCount > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-accent-violet/10 text-accent-violet text-[10px] font-bold">
+                      <span className="px-2 py-0.5 rounded-full bg-accent-violet/10 text-accent-violet text-[10px] font-bold">
                         {unreadCount} new
                       </span>
                     )}
@@ -166,97 +195,137 @@ export function TopBar() {
                 </div>
 
                 {/* Notifications list */}
-                <div className="max-h-72 overflow-y-auto">
+                <div className="max-h-[420px] overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-10 text-center text-sm text-[var(--text-muted)]">
-                      <Bell size={28} className="mx-auto mb-2 opacity-15" />
-                      <p>No notifications yet</p>
+                    <div className="px-4 py-14 text-center text-sm text-[var(--text-muted)]">
+                      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[var(--bg-surface)] flex items-center justify-center">
+                        <Bell size={24} className="opacity-20" />
+                      </div>
+                      <p className="font-medium">No notifications yet</p>
                       <p className="text-[10px] mt-1 opacity-60">They&apos;ll appear here in real-time</p>
                     </div>
                   ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        onClick={() => {
-                          if (!notification.is_read) markAsRead(notification.id);
-                          // Only close and navigate if it's not a session request with action buttons
-                          if (notification.type !== 'session_request') {
-                            setShowNotifications(false);
-                            if (notification.link) {
-                              router.push(notification.link.startsWith('/') ? notification.link : '/dashboard/sessions');
+                    notifications.map((notification) => {
+                      const isAccepted = acceptedSessionIds.has(notification.id);
+                      const isFading = fadingOut.has(notification.id);
+                      const isSessionRequest = notification.type === 'session_request' && notification.link;
+
+                      return (
+                        <div
+                          key={notification.id}
+                          onClick={() => {
+                            if (!notification.is_read) markAsRead(notification.id);
+                            // Only close and navigate if it's not a session request with action buttons
+                            if (!isSessionRequest) {
+                              setShowNotifications(false);
+                              if (notification.link) {
+                                router.push(notification.link.startsWith('/') ? notification.link : '/dashboard/sessions');
+                              }
                             }
-                          }
-                        }}
-                        className={cn(
-                          'flex items-start gap-3 px-4 py-3 hover:bg-[var(--glass-bg)] transition-colors border-b border-[var(--glass-border)] last:border-b-0 cursor-pointer',
-                          !notification.is_read && 'bg-accent-violet/[0.03]'
-                        )}
-                      >
-                        {/* Avatar / Icon Placeholder */}
-                        <div className={cn(
-                          'mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden',
-                          !notification.is_read ? 'bg-accent-violet/10' : 'bg-[var(--bg-surface-solid)]'
-                        )}>
-                          {notification.type === 'session_request' ? (
-                             <Image 
-                               src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${notification.title}&backgroundColor=b6e3f4,c0aede,d1d4f9`} 
-                               alt="Avatar" width={32} height={32} 
-                             />
-                          ) : (
-                             getNotificationIcon(notification.type)
+                          }}
+                          className={cn(
+                            'flex items-start gap-3 px-5 py-4 hover:bg-[var(--bg-surface)]/50 transition-all duration-300 border-b border-[var(--glass-border)] last:border-b-0',
+                            !notification.is_read && 'bg-accent-violet/[0.03]',
+                            isSessionRequest ? 'cursor-default' : 'cursor-pointer',
+                            isFading && 'opacity-0 max-h-0 py-0 overflow-hidden -translate-x-4'
                           )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            'text-xs leading-relaxed',
+                          style={{
+                            transition: isFading
+                              ? 'opacity 300ms ease, max-height 300ms ease, padding 300ms ease, transform 300ms ease'
+                              : 'background-color 150ms ease'
+                          }}
+                        >
+                          {/* Avatar / Icon */}
+                          <div className={cn(
+                            'mt-0.5 w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden ring-2',
                             !notification.is_read
-                              ? 'text-[var(--text-primary)] font-medium'
-                              : 'text-[var(--text-muted)]'
+                              ? 'bg-accent-violet/10 ring-accent-violet/20'
+                              : 'bg-[var(--bg-surface)] ring-[var(--glass-border)]'
                           )}>
-                            <span className="font-semibold">{notification.title}</span>{' '}
-                            {notification.message}
-                          </p>
-                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                            {timeAgo(notification.created_at)}
-                          </p>
+                            {notification.type === 'session_request' ? (
+                               <Image 
+                                 src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${notification.title}&backgroundColor=b6e3f4,c0aede,d1d4f9`} 
+                                 alt="Avatar" width={40} height={40} 
+                               />
+                            ) : (
+                               getNotificationIcon(notification.type)
+                            )}
+                          </div>
 
-                          {/* Action Buttons for Session Requests */}
-                          {notification.type === 'session_request' && notification.link && (
-                            <div className="flex items-center gap-2 mt-3">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAccept(notification.id, notification.link!);
-                                }}
-                                disabled={acceptingId === notification.link}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-violet text-white text-xs font-medium hover:bg-accent-violet/90 transition-all disabled:opacity-50"
-                              >
-                                {acceptingId === notification.link && <Loader2 size={12} className="animate-spin" />}
-                                Accept
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDecline(notification.id);
-                                }}
-                                disabled={acceptingId === notification.link}
-                                className="px-3 py-1.5 rounded-lg text-[var(--text-primary)] hover:bg-[var(--bg-surface-solid)] text-xs font-medium transition-all border border-[var(--glass-border)]"
-                              >
-                                Decline
-                              </button>
-                            </div>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <p className={cn(
+                              'text-[13px] leading-relaxed',
+                              !notification.is_read
+                                ? 'text-[var(--text-primary)] font-medium'
+                                : 'text-[var(--text-muted)]'
+                            )}>
+                              <span className="font-semibold">{notification.title}</span>{' '}
+                              {notification.message}
+                            </p>
+                            <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                              {timeAgo(notification.created_at)}
+                            </p>
+
+                            {/* ─── Action Buttons for Session Requests ─── */}
+                            {isSessionRequest && (
+                              <div className="mt-3">
+                                {isAccepted ? (
+                                  /* ── ACCEPTED STATE: Show "Join Session" button ── */
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleJoinSession(notification.id, notification.link!);
+                                    }}
+                                    className="group flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-violet to-accent-emerald text-white text-xs font-bold shadow-lg shadow-accent-violet/20 hover:shadow-xl hover:shadow-accent-violet/30 hover:brightness-110 active:scale-[0.98] transition-all"
+                                  >
+                                    <Video size={14} className="group-hover:animate-pulse" />
+                                    Join Session
+                                    <span className="ml-auto text-[10px] font-normal opacity-80">Ready →</span>
+                                  </button>
+                                ) : (
+                                  /* ── DEFAULT STATE: Show Accept / Decline ── */
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAccept(notification.id, notification.link!);
+                                      }}
+                                      disabled={acceptingId === notification.link}
+                                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-violet text-white text-xs font-semibold hover:bg-accent-violet/90 active:scale-[0.97] transition-all disabled:opacity-50 shadow-sm shadow-accent-violet/20"
+                                    >
+                                      {acceptingId === notification.link ? (
+                                        <Loader2 size={12} className="animate-spin" />
+                                      ) : (
+                                        <Check size={12} />
+                                      )}
+                                      Accept
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDecline(notification.id);
+                                      }}
+                                      disabled={acceptingId === notification.link}
+                                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[var(--text-primary)] hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 text-xs font-semibold transition-all border border-[var(--glass-border)] bg-[var(--bg-surface-solid)]"
+                                    >
+                                      <X size={12} />
+                                      Decline
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Unread dot */}
+                          {!notification.is_read && !isSessionRequest && (
+                            <span className="mt-2 w-2 h-2 rounded-full bg-accent-violet shrink-0 animate-pulse" />
                           )}
                         </div>
 
-                        {/* Unread dot */}
-                        {!notification.is_read && (
-                          <span className="mt-2 w-2 h-2 rounded-full bg-accent-violet shrink-0" />
-                        )}
-                      </div>
-
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>

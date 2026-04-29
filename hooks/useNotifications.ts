@@ -22,6 +22,7 @@ interface UseNotificationsReturn {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   clearAll: () => Promise<void>;
+  removeNotification: (id: string) => Promise<void>;
 }
 
 export function useNotifications(): UseNotificationsReturn {
@@ -120,5 +121,16 @@ export function useNotifications(): UseNotificationsReturn {
     setNotifications([]);
   }, [user]);
 
-  return { notifications, unreadCount, loading, markAsRead, markAllAsRead, clearAll };
+  const removeNotification = useCallback(async (id: string) => {
+    // Optimistically remove from state first
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+    // Then delete from DB
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id);
+  }, []);
+
+  return { notifications, unreadCount, loading, markAsRead, markAllAsRead, clearAll, removeNotification };
 }
