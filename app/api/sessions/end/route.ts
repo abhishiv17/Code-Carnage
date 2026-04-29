@@ -2,14 +2,18 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 
-// We need an admin client to bypass Row Level Security when updating another user's credits
-const supabaseAdmin = createSupabaseAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
-
 export async function POST(req: Request) {
   try {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: 'Server misconfiguration: Missing Service Role Key' }, { status: 500 });
+    }
+
+    // We need an admin client to bypass Row Level Security when updating another user's credits
+    const supabaseAdmin = createSupabaseAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
     // Normal client to check if the caller is authenticated
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

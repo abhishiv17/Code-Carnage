@@ -26,17 +26,19 @@
 | AI Matching Endpoint | `app/api/ai/match/route.ts` | ✅ DONE | Abhishek |
 | Groq Matching Agent | `services/ai/matchingAgent.ts` | ✅ DONE | Abhishek |
 | AI Prompts | `services/ai/prompts.ts` | ✅ DONE | Abhishek |
-| WebRTC Signaling | `services/webrtc/signaling.ts` | 🔲 SCAFFOLD | Chethan |
+| WebRTC Signaling | `services/webrtc/signaling.ts` | ✅ DONE | Chethan |
 | Video Call Room | `app/dashboard/sessions/[id]/page.tsx` | 🔲 SCAFFOLD | Arjun |
+| Session Create Endpoint | `app/api/sessions/create/route.ts` | ✅ DONE | Kiran |
+| Credit Economy Endpoint | `app/api/sessions/end/route.ts` | ✅ DONE | Kiran |
+| Reviews Endpoint | `app/api/reviews/route.ts` | ✅ DONE | Chethan |
 | Navbar (Web + Mobile) | `components/shared/Navbar.tsx` | 🔲 SCAFFOLD | Arjun |
 | Footer | `components/shared/Footer.tsx` | 🔲 SCAFFOLD | Arjun |
 | Database Schema | `types/database.ts` | ✅ DONE | Kiran |
-| Credit Economy Endpoint | `app/api/sessions/end/route.ts` | ✅ DONE | Kiran |
 | API Types | `types/api.ts` | 🔲 SCAFFOLD | Chethan |
 | App Constants | `lib/constants.ts` | 🔲 SCAFFOLD | All |
 | Supabase Client | `lib/supabase/client.ts` | ✅ DONE | Kiran |
 | Supabase Server | `lib/supabase/server.ts` | ✅ DONE | Kiran |
-| Webhook Handler | `app/api/webhook/route.ts` | 🔲 SCAFFOLD | Chethan |
+| Backend Test Page | `app/test/page.tsx` | ✅ DONE | Abhishek |
 | Health Check API | `app/api/health/route.ts` | ✅ DONE | Abhishek |
 
 ---

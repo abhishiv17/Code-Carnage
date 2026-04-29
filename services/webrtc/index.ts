@@ -1,1 +1,1 @@
-export * from './externalApi';
+export { WebRTCSignaling } from './signaling';
