@@ -1,1 +1,2 @@
-export * from './externalApi';
+// WebRTC service - placeholder for future Supabase Realtime signaling
+export {};
