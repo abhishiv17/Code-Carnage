@@ -18,7 +18,7 @@ create table public.profiles (
   preferred_mode text default 'both',
   languages text[] default '{}',
   profile_completed boolean default false,
-  credits integer default 1 not null,
+  credits integer default 10 not null,
   average_rating numeric(3,2) default 0.0,
   total_sessions integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -58,6 +58,8 @@ create policy "Users can insert own skills." on skills for insert with check (au
 create policy "Users can update own skills." on skills for update using (auth.uid() = user_id);
 create policy "Users can delete own skills." on skills for delete using (auth.uid() = user_id);
 
+create index idx_skills_user_id on public.skills(user_id);
+
 -- 3. Create Sessions Table
 create type session_status as enum ('pending', 'active', 'completed', 'cancelled');
 
@@ -74,6 +76,9 @@ create policy "Users can view their own sessions." on sessions for select using 
 create policy "Learners can insert sessions." on sessions for insert with check (auth.uid() = learner_id);
 create policy "Participants can update sessions." on sessions for update using (auth.uid() = teacher_id or auth.uid() = learner_id);
 
+create index idx_sessions_teacher_id on public.sessions(teacher_id);
+create index idx_sessions_learner_id on public.sessions(learner_id);
+
 -- 4. Create Reviews Table
 create table public.reviews (
   id uuid default gen_random_uuid() primary key,
@@ -87,6 +92,10 @@ create table public.reviews (
 alter table public.reviews enable row level security;
 create policy "Reviews are viewable by everyone." on reviews for select using (true);
 create policy "Users can insert reviews." on reviews for insert with check (auth.uid() = reviewer_id);
+
+create index idx_reviews_session_id on public.reviews(session_id);
+create index idx_reviews_reviewer_id on public.reviews(reviewer_id);
+create index idx_reviews_reviewee_id on public.reviews(reviewee_id);
 
 -- Function to automatically update average_rating on profile when a new review is added
 create function public.update_average_rating()

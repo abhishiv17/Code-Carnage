@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       fullUrl: false,
     },
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'react-markdown', 'remark-gfm', 'zod', 'axios'],
+  },
   images: {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

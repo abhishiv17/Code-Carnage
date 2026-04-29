@@ -37,7 +37,7 @@ const RTC_CONFIG: RTCConfiguration = {
 };
 
 /* ─── Signaling message types ─── */
-type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'hangup';
+type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'hangup' | 'hello' | 'welcome';
 
 interface SignalPayload {
   type: SignalType;
@@ -63,6 +63,8 @@ export function useWebRTC({
   const [screenSharing, setScreenSharing] = useState(false);
   const [connectionState, setConnectionState] =
     useState<RTCPeerConnectionState | 'new'>('new');
+    
+  const hasCreatedOffer = useRef(false);
 
   /* ── helpers ── */
   const broadcast = useCallback(
@@ -140,6 +142,25 @@ export function useWebRTC({
           if (msg.sender === userId) return; // ignore own
 
           try {
+            if (msg.type === 'hello') {
+              broadcast({ type: 'welcome', sender: userId, data: null });
+              if (isCaller && !hasCreatedOffer.current) {
+                hasCreatedOffer.current = true;
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                broadcast({ type: 'offer', sender: userId, data: offer });
+              }
+            }
+
+            if (msg.type === 'welcome') {
+              if (isCaller && !hasCreatedOffer.current) {
+                hasCreatedOffer.current = true;
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                broadcast({ type: 'offer', sender: userId, data: offer });
+              }
+            }
+
             if (msg.type === 'offer' && msg.data) {
               await pc.setRemoteDescription(
                 new RTCSessionDescription(msg.data as RTCSessionDescriptionInit),
@@ -185,11 +206,8 @@ export function useWebRTC({
           }
         })
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED' && isCaller) {
-            // Caller creates the offer after channel ready
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            broadcast({ type: 'offer', sender: userId, data: offer });
+          if (status === 'SUBSCRIBED') {
+            broadcast({ type: 'hello', sender: userId, data: null });
           }
         });
 

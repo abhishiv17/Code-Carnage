@@ -22,6 +22,49 @@ const SESSION_MODES = ['Online', 'In-person', 'Both'];
 const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Urdu', 'Odia', 'Assamese', 'French', 'German', 'Spanish', 'Japanese', 'Korean', 'Mandarin'];
 const YEAR_OPTIONS = [1, 2, 3, 4, 5];
 
+// Reusable input component
+const Input = ({ label, icon: Icon, value, onChange, placeholder, type = 'text' }: {
+  label: string; icon: React.ElementType; value: string;
+  onChange: (v: string) => void; placeholder: string; type?: string;
+}) => (
+  <div>
+    <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
+    <div className="relative">
+      <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
+      />
+    </div>
+  </div>
+);
+
+const Select = ({ label, icon: Icon, value, onChange, options, placeholder }: {
+  label: string; icon: React.ElementType; value: string;
+  onChange: (v: string) => void; options: string[]; placeholder: string;
+}) => (
+  <div>
+    <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
+    <div className="relative">
+      <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all appearance-none cursor-pointer"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+    </div>
+  </div>
+);
+
 export default function ProfilePage() {
   const { profile, skills, loading, refreshProfile } = useUser();
 
@@ -172,49 +215,6 @@ export default function ProfilePage() {
   const offeredSkills = skills.filter((s) => s.type === 'offered');
   const desiredSkills = skills.filter((s) => s.type === 'desired');
   const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
-
-  // Reusable input component
-  const Input = ({ label, icon: Icon, value, onChange, placeholder, type = 'text' }: {
-    label: string; icon: React.ElementType; value: string;
-    onChange: (v: string) => void; placeholder: string; type?: string;
-  }) => (
-    <div>
-      <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
-      <div className="relative">
-        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
-        />
-      </div>
-    </div>
-  );
-
-  const Select = ({ label, icon: Icon, value, onChange, options, placeholder }: {
-    label: string; icon: React.ElementType; value: string;
-    onChange: (v: string) => void; options: string[]; placeholder: string;
-  }) => (
-    <div>
-      <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">{label}</label>
-      <div className="relative">
-        <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all appearance-none cursor-pointer"
-        >
-          <option value="">{placeholder}</option>
-          {options.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6 max-w-3xl">

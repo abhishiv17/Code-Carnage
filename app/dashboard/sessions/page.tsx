@@ -28,8 +28,9 @@ interface ProfileMap {
 export default function SessionsPage() {
   const { user } = useUser();
   const supabase = createClient();
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
-  const { data, isLoading: loading } = useQuery({
+  const { data, isLoading: loading, refetch } = useQuery({
     queryKey: ['sessions', user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -71,6 +72,28 @@ export default function SessionsPage() {
 
   const sessions = data?.sessions || [];
   const profiles = data?.profiles || {};
+
+  const handleAcceptSession = async (sessionId: string) => {
+    setAcceptingId(sessionId);
+    try {
+      const res = await fetch('/api/sessions/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      const resData = await res.json();
+      if (!res.ok) {
+        toast.error(resData.error || 'Failed to accept session');
+        return;
+      }
+      toast.success('Session accepted! You can now join the call.');
+      refetch();
+    } catch (err) {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setAcceptingId(null);
+    }
+  };
 
   const upcoming = sessions.filter((s) => s.status === 'pending' || s.status === 'active');
   const completed = sessions.filter((s) => s.status === 'completed');
@@ -162,6 +185,23 @@ export default function SessionsPage() {
                         Join
                       </Link>
                     </GradientButton>
+                  )}
+
+                  {session.status === 'pending' && isTeaching && (
+                    <GradientButton 
+                      size="sm" 
+                      onClick={() => handleAcceptSession(session.id)}
+                      disabled={acceptingId === session.id}
+                    >
+                      {acceptingId === session.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                      Accept
+                    </GradientButton>
+                  )}
+                  
+                  {session.status === 'pending' && !isTeaching && (
+                    <span className="text-xs text-[var(--text-muted)] italic px-3 py-1.5 bg-[var(--bg-surface-solid)] rounded-lg border border-[var(--glass-border)]">
+                      Waiting...
+                    </span>
                   )}
                 </GlassCard>
               );

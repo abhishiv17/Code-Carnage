@@ -22,8 +22,6 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
-import Link from 'next/link';
-import { ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export default function VideoRoomPage() {
@@ -321,9 +319,18 @@ export default function VideoRoomPage() {
         {/* Hang up */}
         <button
           id="btn-hangup"
-          onClick={() => {
+          onClick={async () => {
             hangUp();
-            router.push(ROUTES.reviews);
+            try {
+              await fetch('/api/sessions/end', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId }),
+              });
+            } catch (err) {
+              console.error('Failed to end session:', err);
+            }
+            router.push(`/dashboard/reviews?sessionId=${sessionId}`);
           }}
           className="p-4 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all"
         >
