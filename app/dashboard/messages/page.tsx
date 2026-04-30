@@ -149,22 +149,47 @@ export default function MessagesPage() {
       if (!profile?.id) return;
       const supabase = createClient();
       
-      // Fetch connections and join with profiles table
-      const { data } = await supabase
+      // Fetch connections WITHOUT FK joins (connections FK → auth.users, not profiles)
+      const { data: rawConnections, error } = await supabase
         .from('connections')
-        .select(`
-          id,
-          status,
-          requester_id,
-          receiver_id,
-          created_at,
-          requester:profiles!connections_requester_id_fkey(id, username, full_name, college_name),
-          receiver:profiles!connections_receiver_id_fkey(id, username, full_name, college_name)
-        `)
+        .select('id, status, requester_id, receiver_id, created_at, updated_at')
         .or(`requester_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
         .order('updated_at', { ascending: false });
 
-      if (data) setConnections(data);
+      if (error || !rawConnections) {
+        console.error('[Messages] Failed to load connections:', error);
+        setLoadingChats(false);
+        return;
+      }
+
+      // Collect all unique peer IDs
+      const peerIds = Array.from(new Set(
+        rawConnections.flatMap(c => [c.requester_id, c.receiver_id]).filter(id => id !== profile.id)
+      ));
+
+      // Fetch profiles for all peers in one go
+      let profileMap: Record<string, any> = {};
+      if (peerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, college_name')
+          .in('id', peerIds);
+        
+        profiles?.forEach(p => { profileMap[p.id] = p; });
+      }
+
+      // Attach profile objects as `requester` and `receiver` for downstream rendering
+      const enrichedConnections = rawConnections.map(c => ({
+        ...c,
+        requester: c.requester_id === profile.id
+          ? { id: profile.id, username: profile.username, full_name: profile.full_name, college_name: profile.college_name }
+          : profileMap[c.requester_id] || { id: c.requester_id, username: 'Unknown', full_name: null, college_name: null },
+        receiver: c.receiver_id === profile.id
+          ? { id: profile.id, username: profile.username, full_name: profile.full_name, college_name: profile.college_name }
+          : profileMap[c.receiver_id] || { id: c.receiver_id, username: 'Unknown', full_name: null, college_name: null },
+      }));
+
+      setConnections(enrichedConnections);
       setLoadingChats(false);
     }
     loadConnections();
@@ -221,24 +246,30 @@ export default function MessagesPage() {
          setChatMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'connections' }, async (payload) => {
-         const newConn = payload.new;
+         const newConn = payload.new as any;
          if (newConn.requester_id === profile.id || newConn.receiver_id === profile.id) {
-            const { data } = await supabase
-              .from('connections')
-              .select(`
-                id, status, requester_id, receiver_id, created_at,
-                requester:profiles!connections_requester_id_fkey(id, username, full_name, college_name),
-                receiver:profiles!connections_receiver_id_fkey(id, username, full_name, college_name)
-              `)
-              .eq('id', newConn.id)
+            // Fetch the peer's profile manually (no FK join)
+            const peerId = newConn.requester_id === profile.id ? newConn.receiver_id : newConn.requester_id;
+            const { data: peerProfile } = await supabase
+              .from('profiles')
+              .select('id, username, full_name, college_name')
+              .eq('id', peerId)
               .single();
+
+            const enrichedConn = {
+              ...newConn,
+              requester: newConn.requester_id === profile.id
+                ? { id: profile.id, username: profile.username, full_name: profile.full_name, college_name: profile.college_name }
+                : peerProfile || { id: newConn.requester_id, username: 'Unknown', full_name: null, college_name: null },
+              receiver: newConn.receiver_id === profile.id
+                ? { id: profile.id, username: profile.username, full_name: profile.full_name, college_name: profile.college_name }
+                : peerProfile || { id: newConn.receiver_id, username: 'Unknown', full_name: null, college_name: null },
+            };
               
-            if (data) {
-                setConnections(prev => {
-                   if (prev.find(c => c.id === data.id)) return prev;
-                   return [data, ...prev];
-                });
-            }
+            setConnections(prev => {
+               if (prev.find(c => c.id === enrichedConn.id)) return prev;
+               return [enrichedConn, ...prev];
+            });
          }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'connections' }, (payload) => {

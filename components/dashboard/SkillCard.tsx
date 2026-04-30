@@ -41,38 +41,58 @@ export function SkillCard({ listing }: SkillCardProps) {
       toast.error('You must be logged in to connect.');
       return;
     }
+    if (currentUser.id === listing.user.id) return;
     
     setIsConnecting(true);
     const supabase = createClient();
     
     try {
-      // 1. Create a connection request
+      // Check if a connection already exists in EITHER direction
+      const { data: existing } = await supabase
+        .from('connections')
+        .select('id, status, requester_id')
+        .or(`and(requester_id.eq.${currentUser.id},receiver_id.eq.${listing.user.id}),and(requester_id.eq.${listing.user.id},receiver_id.eq.${currentUser.id})`)
+        .maybeSingle();
+
+      if (existing) {
+        // Connection already exists
+        setConnectionStatus(existing.status as 'pending' | 'accepted');
+        if (existing.status === 'accepted') {
+          toast.info('You are already connected!');
+        } else {
+          toast.info('Connection request already sent!');
+        }
+        setIsConnecting(false);
+        return;
+      }
+
+      // Create a new connection request
       const { error: connectionError } = await supabase
         .from('connections')
-        .upsert({
+        .insert({
           requester_id: currentUser.id,
           receiver_id: listing.user.id,
           status: 'pending'
-        }, { onConflict: 'requester_id,receiver_id' });
+        });
         
       if (connectionError) throw connectionError;
       
-      // 2. Fetch current user's profile to get their name
-      const { data: profile } = await supabase
+      // Fetch current user's profile to get their name
+      const { data: userProfile } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, full_name')
         .eq('id', currentUser.id)
         .single();
         
-      const myName = profile?.username || 'Someone';
+      const myName = userProfile?.full_name || userProfile?.username || 'Someone';
 
-      // 3. Send notification
+      // Send notification
       await supabase.from('notifications').insert({
         user_id: listing.user.id,
         type: 'connection_request',
         title: 'New Connection Request',
         message: `${myName} wants to connect with you to swap skills!`,
-        link: `/dashboard/user/${currentUser.id}`
+        link: `/dashboard/messages`
       });
       
       setConnectionStatus('pending');

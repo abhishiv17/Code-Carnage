@@ -85,11 +85,11 @@ export default function UserProfilePage() {
         // Send new request
         const { error } = await supabase
           .from('connections')
-          .upsert({ 
+          .insert({ 
             requester_id: currentUser.id, 
             receiver_id: id, 
             status: 'pending' 
-          }, { onConflict: 'requester_id,receiver_id' });
+          });
           
         if (error) throw error;
         
@@ -99,7 +99,7 @@ export default function UserProfilePage() {
           type: 'connection_request',
           title: 'New Connection Request',
           message: `${currentUser.full_name || currentUser.username || 'Someone'} wants to connect with you!`,
-          link: `/dashboard/user/${currentUser.id}`
+          link: `/dashboard/messages`
         });
 
         setFollowStatus('pending');
