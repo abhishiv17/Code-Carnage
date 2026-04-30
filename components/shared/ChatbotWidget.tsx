@@ -192,7 +192,7 @@ export function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
       <div className={cn('mb-4 transition-all duration-300 origin-bottom-right', isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 translate-y-4 pointer-events-none')}>
         <div className={cn("flex flex-col glass rounded-3xl shadow-2xl border border-accent-violet/15 overflow-hidden", isFullScreen ? "fixed inset-4 w-auto h-auto z-[60]" : "w-[360px] sm:w-[420px] h-[560px] max-h-[80vh]")}>
           <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-accent-violet/10 to-accent-amber/5 border-b border-[var(--glass-border)] shrink-0">
@@ -257,7 +257,7 @@ export function ChatbotWidget() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95',
+          'pointer-events-auto w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95',
           isOpen
             ? 'bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-muted)]'
             : 'bg-gradient-to-tr from-accent-violet to-accent-amber text-white shadow-accent-violet/30'

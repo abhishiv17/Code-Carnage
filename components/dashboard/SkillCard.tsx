@@ -1,17 +1,74 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import type { MarketplaceListing } from '@/lib/mock-data';
-import { Clock, Coins, ArrowRightLeft, BadgeCheck } from 'lucide-react';
+import { Clock, Coins, ArrowRightLeft, BadgeCheck, Check, Send } from 'lucide-react';
 import { GradientButton } from '@/components/shared/GradientButton';
-import Link from 'next/link';
-import { ROUTES } from '@/lib/constants';
+import { useUser } from '@/hooks/useUser';
+import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 interface SkillCardProps {
   listing: MarketplaceListing;
 }
 
 export function SkillCard({ listing }: SkillCardProps) {
+  const { user: currentUser } = useUser();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
+
+  const handleConnect = async () => {
+    if (!currentUser) {
+      toast.error('You must be logged in to connect.');
+      return;
+    }
+    
+    setIsConnecting(true);
+    const supabase = createClient();
+    
+    try {
+      // 1. Create a connection request
+      const { error: connectionError } = await supabase
+        .from('connections')
+        .upsert({
+          requester_id: currentUser.id,
+          receiver_id: listing.user.id,
+          status: 'pending'
+        }, { onConflict: 'requester_id,receiver_id' });
+        
+      if (connectionError) throw connectionError;
+      
+      // 2. Fetch current user's profile to get their name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', currentUser.id)
+        .single();
+        
+      const myName = profile?.username || 'Someone';
+
+      // 3. Send notification
+      await supabase.from('notifications').insert({
+        user_id: listing.user.id,
+        type: 'connection_request',
+        title: 'New Connection Request',
+        message: `${myName} wants to connect with you to swap skills!`,
+        link: `/dashboard/user/${currentUser.id}`
+      });
+      
+      setConnected(true);
+      toast.success(`Connection request sent to ${listing.user.name}!`);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'Failed to connect');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   return (
     <GlassCard hover className="flex flex-col h-full group">
       {/* Header: user info */}
@@ -76,9 +133,22 @@ export function SkillCard({ listing }: SkillCardProps) {
             {listing.availability}
           </span>
         </div>
-        <Link href={ROUTES.matches} className="relative z-10">
-          <GradientButton size="sm">Connect</GradientButton>
-        </Link>
+        <div className="relative z-10">
+          <GradientButton 
+            size="sm" 
+            onClick={handleConnect} 
+            disabled={isConnecting || connected}
+            className="flex items-center gap-2"
+          >
+            {connected ? (
+              <><Check size={14} /> Requested</>
+            ) : isConnecting ? (
+              <><Send size={14} className="animate-pulse" /> Sending...</>
+            ) : (
+              'Connect'
+            )}
+          </GradientButton>
+        </div>
       </div>
     </GlassCard>
   );

@@ -12,6 +12,14 @@
 
 ---
 
+## 🏆 Hackathon Demo Highlights
+- **100% Live Database:** Zero mock data. Every feature is fully integrated with Supabase.
+- **End-to-End P2P Video:** Fully working WebRTC rooms for live skill-swapping.
+- **Real-Time Everything:** Instant notifications, online presence, and live direct messaging.
+- **AI-Powered Matching:** Groq LLaMA-3.1 engine intelligently pairs users based on desired/offered skills.
+
+---
+
 ## ✨ Features
 
 ### 🏠 Landing Page

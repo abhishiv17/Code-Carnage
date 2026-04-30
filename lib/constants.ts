@@ -13,6 +13,7 @@ export const ROUTES = {
   leaderboard: '/dashboard/leaderboard',
   messages: '/dashboard/messages',
   calendar: '/dashboard/calendar',
+  feed: '/dashboard/feed',
 } as const;
 
 export const SKILL_CATEGORIES = [

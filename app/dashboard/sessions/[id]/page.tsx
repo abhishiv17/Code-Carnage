@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useUser';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { GlassCard } from '@/components/shared/GlassCard';
+import { GradientButton } from '@/components/shared/GradientButton';
+import { authFetch } from '@/lib/authFetch';
 import {
   Video,
   VideoOff,
@@ -21,10 +23,44 @@ import {
   Loader2,
   Wifi,
   WifiOff,
+  Send,
+  AlertTriangle,
 } from 'lucide-react';
-import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
+
+/* ── Chat message type ── */
+interface ChatMessage {
+  id: string;
+  sender: string;
+  senderName: string;
+  text: string;
+  timestamp: number;
+}
+
+/* ── Elapsed timer component ── */
+function SessionTimer({ startedAt }: { startedAt: Date }) {
+  const [elapsed, setElapsed] = useState('00:00');
+
+  useEffect(() => {
+    const update = () => {
+      const diff = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
+      const hrs = Math.floor(diff / 3600);
+      const mins = Math.floor((diff % 3600) / 60);
+      const secs = diff % 60;
+      setElapsed(
+        hrs > 0
+          ? `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+          : `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      );
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [startedAt]);
+
+  return <>{elapsed}</>;
+}
 
 export default function VideoRoomPage() {
   const { id } = useParams();
@@ -34,6 +70,15 @@ export default function VideoRoomPage() {
   const [peerName, setPeerName] = useState('Peer');
   const [isTeaching, setIsTeaching] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sessionStartedAt, setSessionStartedAt] = useState<Date>(new Date());
+  const [endingSession, setEndingSession] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
+
+  /* Chat state */
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatChannelRef = useRef<any>(null);
 
   /* Refs for <video> elements */
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -50,26 +95,95 @@ export default function VideoRoomPage() {
         .eq('id', sessionId)
         .single();
 
-      if (sessionErr) {
+      if (sessionErr || !session) {
         console.error('Failed to fetch session:', sessionErr);
-        toast.error('Failed to load session details');
+        toast.error('Session not found or access denied');
+        router.push(ROUTES.sessions);
+        return;
       }
 
-      if (session) {
-        const teaching = session.teacher_id === user.id;
-        setIsTeaching(teaching);
-        const peerId = teaching ? session.learner_id : session.teacher_id;
-        const { data: peerProfile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', peerId)
-          .single();
-        if (peerProfile) setPeerName(peerProfile.username);
+      // Check if user is a participant
+      if (session.teacher_id !== user.id && session.learner_id !== user.id) {
+        toast.error('You are not part of this session');
+        router.push(ROUTES.sessions);
+        return;
       }
+
+      // Check if session is active
+      if (session.status !== 'active') {
+        toast.error(`This session is ${session.status}. Only active sessions can be joined.`);
+        router.push(ROUTES.sessions);
+        return;
+      }
+
+      const teaching = session.teacher_id === user.id;
+      setIsTeaching(teaching);
+      setSessionStartedAt(new Date(session.created_at));
+
+      const peerId = teaching ? session.learner_id : session.teacher_id;
+      const { data: peerProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', peerId)
+        .single();
+      if (peerProfile) setPeerName(peerProfile.username);
+
       setLoading(false);
     };
     fetchSession();
-  }, [user, sessionId]);
+  }, [user, sessionId, router]);
+
+  /* ── Real-time chat via Supabase Broadcast ── */
+  useEffect(() => {
+    if (!sessionId || !user) return;
+    const supabase = createClient();
+
+    const channel = supabase.channel(`chat-${sessionId}`, {
+      config: { broadcast: { self: true } },
+    });
+
+    channel
+      .on('broadcast', { event: 'chat-message' }, ({ payload }) => {
+        const msg = payload as ChatMessage;
+        setChatMessages((prev) => {
+          // Deduplicate
+          if (prev.find((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      })
+      .subscribe();
+
+    chatChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId, user]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const sendChatMessage = useCallback(() => {
+    if (!chatInput.trim() || !user || !profile) return;
+
+    const msg: ChatMessage = {
+      id: `${user.id}-${Date.now()}`,
+      sender: user.id,
+      senderName: profile.username || 'You',
+      text: chatInput.trim(),
+      timestamp: Date.now(),
+    };
+
+    chatChannelRef.current?.send({
+      type: 'broadcast',
+      event: 'chat-message',
+      payload: msg,
+    });
+
+    setChatInput('');
+  }, [chatInput, user, profile]);
 
   /* WebRTC — teacher is the "caller" (initiator) */
   const {
@@ -108,22 +222,70 @@ export default function VideoRoomPage() {
     remoteVideoRef.current?.requestFullscreen?.();
   }, []);
 
+  /* End session — calls the API to process credits */
+  const handleEndSession = useCallback(async () => {
+    if (endingSession || sessionEnded) return;
+    setEndingSession(true);
+
+    try {
+      const res = await authFetch('/api/sessions/end', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to end session');
+        setEndingSession(false);
+        return;
+      }
+
+      toast.success('Session ended! Credits have been processed.');
+      setSessionEnded(true);
+      hangUp();
+
+      // Navigate to reviews after a brief pause
+      setTimeout(() => {
+        router.push(ROUTES.reviews);
+      }, 1500);
+    } catch (err) {
+      toast.error('Something went wrong ending the session');
+      console.error(err);
+      setEndingSession(false);
+    }
+  }, [endingSession, sessionEnded, sessionId, hangUp, router]);
+
   /* Avatars (fallback when cam off / no stream) */
   const peerAvatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${peerName}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
   const myAvatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
   const isRemoteConnected = connectionState === 'connected';
+  const isConnecting = connectionState === 'new' || connectionState === 'connecting';
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 size={24} className="animate-spin text-accent-violet" />
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 size={32} className="animate-spin text-accent-violet" />
+        <p className="text-sm text-[var(--text-muted)]">Loading session…</p>
+      </div>
+    );
+  }
+
+  if (sessionEnded) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div className="w-16 h-16 rounded-full bg-accent-emerald/10 border border-accent-emerald/20 flex items-center justify-center">
+          <Video size={28} className="text-accent-emerald" />
+        </div>
+        <h2 className="text-xl font-heading font-bold text-[var(--text-primary)]">Session Complete!</h2>
+        <p className="text-sm text-[var(--text-muted)]">Redirecting to reviews…</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -131,7 +293,7 @@ export default function VideoRoomPage() {
             Live Session
           </h1>
           <span className="text-sm text-[var(--text-muted)]">
-            with {peerName}
+            {isTeaching ? 'Teaching' : 'Learning from'} <span className="text-accent-violet font-medium">{peerName}</span>
           </span>
         </div>
         <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
@@ -139,19 +301,21 @@ export default function VideoRoomPage() {
           <span className="flex items-center gap-1.5">
             {isRemoteConnected ? (
               <Wifi size={14} className="text-green-400" />
-            ) : (
+            ) : isConnecting ? (
               <WifiOff size={14} className="text-yellow-400 animate-pulse" />
+            ) : (
+              <WifiOff size={14} className="text-red-400" />
             )}
-            <span className="text-xs">
-              {connectionState === 'new'
-                ? 'Connecting…'
-                : connectionState}
+            <span className="text-xs capitalize">
+              {connectionState === 'new' ? 'Connecting…' : connectionState}
             </span>
           </span>
-          <span className="flex items-center gap-1">
+          {/* Session timer */}
+          <span className="flex items-center gap-1 font-mono text-xs">
             <Clock size={14} />
-            60min
+            <SessionTimer startedAt={sessionStartedAt} />
           </span>
+          {/* Live badge */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-xs font-medium text-red-400">LIVE</span>
@@ -169,26 +333,33 @@ export default function VideoRoomPage() {
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                isRemoteConnected ? 'opacity-100' : 'opacity-0'
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                isRemoteConnected && remoteStream && remoteStream.getVideoTracks().length > 0 ? 'opacity-100' : 'opacity-0'
               }`}
             />
 
             {/* Fallback avatar when not connected */}
-            {!isRemoteConnected && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <Image
-                  src={peerAvatar}
-                  alt={peerName}
-                  width={96}
-                  height={96}
-                  className="w-24 h-24 rounded-full mb-4 ring-4 ring-accent-violet/20"
-                />
+            {(!isRemoteConnected || !remoteStream || remoteStream.getVideoTracks().length === 0) && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[var(--bg-deep)] to-[var(--bg-surface)]">
+                <div className="relative">
+                  <Image
+                    src={peerAvatar}
+                    alt={peerName}
+                    width={96}
+                    height={96}
+                    className="w-24 h-24 rounded-full mb-4 ring-4 ring-accent-violet/20"
+                  />
+                  {isConnecting && (
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[var(--bg-surface)] border-2 border-accent-violet/30 flex items-center justify-center">
+                      <Loader2 size={14} className="animate-spin text-accent-violet" />
+                    </div>
+                  )}
+                </div>
                 <p className="font-heading font-semibold text-[var(--text-primary)]">
                   {peerName}
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-1">
-                  Waiting for connection…
+                  {isConnecting ? 'Connecting…' : connectionState === 'failed' ? 'Connection failed — retrying…' : 'Waiting for peer…'}
                 </p>
               </div>
             )}
@@ -200,7 +371,7 @@ export default function VideoRoomPage() {
             {/* Fullscreen btn */}
             <button
               onClick={handleFullscreen}
-              className="absolute top-4 right-4 p-2 rounded-lg glass text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              className="absolute top-4 right-4 p-2 rounded-lg glass text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
             >
               <Maximize2 size={16} />
             </button>
@@ -246,33 +417,83 @@ export default function VideoRoomPage() {
                 </span>
               </div>
             )}
+
+            {/* Name badge */}
+            <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg glass text-xs font-medium text-[var(--text-secondary)]">
+              You {isTeaching ? '(Teacher)' : '(Learner)'}
+            </div>
           </div>
 
           {/* Chat panel */}
-          <GlassCard padding="sm" className="flex-1">
+          <GlassCard padding="sm" className="flex-1 flex flex-col min-h-[200px] max-h-[320px]">
             <div className="flex items-center gap-2 mb-3">
               <MessageSquare size={14} className="text-accent-violet" />
               <span className="text-sm font-heading font-semibold text-[var(--text-primary)]">
                 Chat
               </span>
+              {chatMessages.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent-violet/10 text-accent-violet font-medium">
+                  {chatMessages.length}
+                </span>
+              )}
             </div>
-            <div className="space-y-2 text-xs text-[var(--text-muted)]">
-              <p>
-                <span className="text-accent-amber font-medium">
-                  {peerName}:
-                </span>{' '}
-                Ready to start?
-              </p>
-              <p>
-                <span className="text-accent-violet font-medium">You:</span>{' '}
-                Let&apos;s go 🚀
-              </p>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3 pr-1 scrollbar-thin">
+              {chatMessages.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] text-center py-4 italic">
+                  No messages yet. Say hi! 👋
+                </p>
+              ) : (
+                chatMessages.map((msg) => {
+                  const isMe = msg.sender === user?.id;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                    >
+                      <span className="text-[10px] text-[var(--text-muted)] mb-0.5">
+                        {isMe ? 'You' : msg.senderName}
+                      </span>
+                      <div
+                        className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] break-words ${
+                          isMe
+                            ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/20'
+                            : 'bg-[var(--bg-surface-solid)] text-[var(--text-primary)] border border-[var(--glass-border)]'
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
             </div>
-            <input
-              type="text"
-              placeholder="Type a message..."
-              className="mt-3 w-full px-3 py-2 rounded-lg bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-accent-violet/50"
-            />
+
+            {/* Input */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                sendChatMessage();
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Type a message…"
+                className="flex-1 px-3 py-2 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-accent-violet/50 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="p-2 rounded-xl bg-accent-violet/10 text-accent-violet hover:bg-accent-violet/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <Send size={14} />
+              </button>
+            </form>
           </GlassCard>
         </div>
       </div>
@@ -283,10 +504,11 @@ export default function VideoRoomPage() {
         <button
           id="btn-toggle-mic"
           onClick={toggleMic}
-          className={`p-4 rounded-2xl transition-all ${
+          title={micOn ? 'Mute microphone' : 'Unmute microphone'}
+          className={`p-4 rounded-2xl transition-all duration-200 ${
             micOn
-              ? 'glass text-[var(--text-primary)]'
-              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              ? 'glass text-[var(--text-primary)] hover:bg-[var(--bg-surface-solid)]'
+              : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
           }`}
         >
           {micOn ? <Mic size={20} /> : <MicOff size={20} />}
@@ -296,10 +518,11 @@ export default function VideoRoomPage() {
         <button
           id="btn-toggle-camera"
           onClick={toggleCamera}
-          className={`p-4 rounded-2xl transition-all ${
+          title={cameraOn ? 'Turn off camera' : 'Turn on camera'}
+          className={`p-4 rounded-2xl transition-all duration-200 ${
             cameraOn
-              ? 'glass text-[var(--text-primary)]'
-              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              ? 'glass text-[var(--text-primary)] hover:bg-[var(--bg-surface-solid)]'
+              : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
           }`}
         >
           {cameraOn ? <Video size={20} /> : <VideoOff size={20} />}
@@ -309,27 +532,50 @@ export default function VideoRoomPage() {
         <button
           id="btn-toggle-screen"
           onClick={toggleScreenShare}
-          className={`p-4 rounded-2xl transition-all ${
+          title={screenSharing ? 'Stop sharing' : 'Share screen'}
+          className={`p-4 rounded-2xl transition-all duration-200 ${
             screenSharing
-              ? 'bg-accent-violet/20 text-accent-violet border border-accent-violet/30'
-              : 'glass text-[var(--text-primary)]'
+              ? 'bg-accent-violet/20 text-accent-violet border border-accent-violet/30 hover:bg-accent-violet/30'
+              : 'glass text-[var(--text-primary)] hover:bg-[var(--bg-surface-solid)]'
           }`}
         >
           {screenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
         </button>
 
-        {/* Hang up */}
+        {/* Divider */}
+        <div className="w-px h-10 bg-[var(--glass-border)] mx-1" />
+
+        {/* End Session — calls API to process credits */}
         <button
-          id="btn-hangup"
-          onClick={() => {
-            hangUp();
-            router.push(ROUTES.reviews);
-          }}
-          className="p-4 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all"
+          id="btn-end-session"
+          onClick={handleEndSession}
+          disabled={endingSession}
+          title="End session & process credits"
+          className="px-6 py-4 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all duration-200 flex items-center gap-2 font-heading font-semibold text-sm disabled:opacity-50"
         >
-          <PhoneOff size={20} />
+          {endingSession ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              Ending…
+            </>
+          ) : (
+            <>
+              <PhoneOff size={18} />
+              End Session
+            </>
+          )}
         </button>
       </div>
+
+      {/* Connection warning */}
+      {connectionState === 'failed' && (
+        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-accent-amber/10 border border-accent-amber/20">
+          <AlertTriangle size={16} className="text-accent-amber" />
+          <span className="text-sm text-accent-amber">
+            Connection failed. Attempting to reconnect automatically…
+          </span>
+        </div>
+      )}
     </div>
   );
 }

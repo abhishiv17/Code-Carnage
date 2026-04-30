@@ -47,24 +47,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
     }
 
-    // Fetch learner's username for the notification message
-    const { data: learnerProfile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', user.id)
-      .single();
-
-    const learnerName = learnerProfile?.username || 'Someone';
-
-    // Notify the teacher about the new session request
-    await supabase.from('notifications').insert({
-      user_id: teacherId,
-      type: 'session_request',
-      title: 'New Session Request!',
-      message: `${learnerName} wants to learn from you.`,
-      link: '/dashboard/sessions',
-    });
-
     return NextResponse.json({ session });
   } catch (error) {
     console.error("Create Session Error:", error);

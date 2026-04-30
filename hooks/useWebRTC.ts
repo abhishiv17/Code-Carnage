@@ -25,19 +25,40 @@ export interface UseWebRTCReturn {
   hangUp: () => void;
 }
 
-/* ─── STUN config ─── */
+/* ─── ICE config with free STUN + TURN ─── */
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
+    {
+      urls: 'stun:stun.relay.metered.ca:80',
+    },
+    {
+      urls: 'turn:global.relay.metered.ca:80',
+      username: 'e8dd65c092bfccf46b5c1953',
+      credential: 'sPaZ8oMLkLfTYDgf',
+    },
+    {
+      urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+      username: 'e8dd65c092bfccf46b5c1953',
+      credential: 'sPaZ8oMLkLfTYDgf',
+    },
+    {
+      urls: 'turn:global.relay.metered.ca:443',
+      username: 'e8dd65c092bfccf46b5c1953',
+      credential: 'sPaZ8oMLkLfTYDgf',
+    },
+    {
+      urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+      username: 'e8dd65c092bfccf46b5c1953',
+      credential: 'sPaZ8oMLkLfTYDgf',
+    },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 /* ─── Signaling message types ─── */
-type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'hangup';
+type SignalType = 'offer' | 'answer' | 'ice-candidate' | 'hangup' | 'ready' | 'renegotiate';
 
 interface SignalPayload {
   type: SignalType;
@@ -56,6 +77,8 @@ export function useWebRTC({
   const localStreamRef = useRef<MediaStream | null>(null);
   const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
   const supabaseRef = useRef(createClient());
+  const makingOfferRef = useRef(false);
+  const peerReadyRef = useRef(false);
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -77,6 +100,24 @@ export function useWebRTC({
     [],
   );
 
+  /* ── Create offer (called by polite/impolite negotiation) ── */
+  const createAndSendOffer = useCallback(
+    async (pc: RTCPeerConnection) => {
+      try {
+        makingOfferRef.current = true;
+        const offer = await pc.createOffer();
+        if (pc.signalingState !== 'stable') return;
+        await pc.setLocalDescription(offer);
+        broadcast({ type: 'offer', sender: userId, data: pc.localDescription!.toJSON() });
+      } catch (err) {
+        console.error('[useWebRTC] createOffer error', err);
+      } finally {
+        makingOfferRef.current = false;
+      }
+    },
+    [broadcast, userId],
+  );
+
   /* ── initialise media + peer connection ── */
   useEffect(() => {
     if (!sessionId || !userId) return;
@@ -86,18 +127,30 @@ export function useWebRTC({
     const pendingCandidates: RTCIceCandidateInit[] = [];
 
     async function init() {
-      /* 1. Get local media */
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      /* 1. Get local media — graceful fallback */
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: { echoCancellation: true, noiseSuppression: true },
+        });
+      } catch (mediaErr) {
+        console.warn('[useWebRTC] Camera/mic unavailable, trying audio-only…', mediaErr);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          if (isMounted) setCameraOn(false);
+        } catch {
+          console.error('[useWebRTC] No media devices available');
+          stream = new MediaStream(); // empty stream – still allows receiving
+        }
+      }
+
       if (!isMounted) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
       localStreamRef.current = stream;
-      cameraTrackRef.current =
-        stream.getVideoTracks()[0] ?? null;
+      cameraTrackRef.current = stream.getVideoTracks()[0] ?? null;
       setLocalStream(stream);
 
       /* 2. Create peer connection */
@@ -112,7 +165,11 @@ export function useWebRTC({
       if (isMounted) setRemoteStream(remote);
 
       pc.ontrack = (e) => {
-        e.streams[0]?.getTracks().forEach((t) => remote.addTrack(t));
+        e.streams[0]?.getTracks().forEach((t) => {
+          if (!remote.getTracks().find((rt) => rt.id === t.id)) {
+            remote.addTrack(t);
+          }
+        });
         if (isMounted) setRemoteStream(new MediaStream(remote.getTracks()));
       };
 
@@ -128,9 +185,30 @@ export function useWebRTC({
 
       pc.onconnectionstatechange = () => {
         if (isMounted) setConnectionState(pc.connectionState);
+        // Attempt reconnection on failure
+        if (pc.connectionState === 'failed') {
+          console.warn('[useWebRTC] Connection failed, restarting ICE…');
+          pc.restartIce();
+          if (isCaller) {
+            createAndSendOffer(pc);
+          }
+        }
       };
 
-      /* 3. Supabase Broadcast channel */
+      pc.oniceconnectionstatechange = () => {
+        if (pc.iceConnectionState === 'disconnected') {
+          console.warn('[useWebRTC] ICE disconnected, will try reconnecting…');
+        }
+      };
+
+      // Perfect negotiation: handle renegotiation needs
+      pc.onnegotiationneeded = async () => {
+        if (isCaller && peerReadyRef.current) {
+          await createAndSendOffer(pc);
+        }
+      };
+
+      /* 3. Supabase Broadcast channel for signaling */
       const channel = supabase.channel(`webrtc-${sessionId}`, {
         config: { broadcast: { self: false } },
       });
@@ -141,7 +219,41 @@ export function useWebRTC({
           if (msg.sender === userId) return; // ignore own
 
           try {
+            /* Peer announced they are ready */
+            if (msg.type === 'ready') {
+              peerReadyRef.current = true;
+              // If I'm the caller, now send the offer
+              if (isCaller && pc.signalingState === 'stable') {
+                await createAndSendOffer(pc);
+              }
+              return;
+            }
+
+            /* Peer wants renegotiation */
+            if (msg.type === 'renegotiate') {
+              if (isCaller) {
+                await createAndSendOffer(pc);
+              }
+              return;
+            }
+
             if (msg.type === 'offer' && msg.data) {
+              // "Perfect negotiation" — polite peer rolls back
+              const offerCollision =
+                makingOfferRef.current || pc.signalingState !== 'stable';
+              const isPolite = !isCaller;
+
+              if (offerCollision && !isPolite) {
+                // Impolite peer ignores incoming offer during collision
+                return;
+              }
+
+              if (offerCollision && isPolite) {
+                await Promise.all([
+                  pc.setLocalDescription({ type: 'rollback' }),
+                ]);
+              }
+
               await pc.setRemoteDescription(
                 new RTCSessionDescription(msg.data as RTCSessionDescriptionInit),
               );
@@ -157,14 +269,16 @@ export function useWebRTC({
             }
 
             if (msg.type === 'answer' && msg.data) {
-              await pc.setRemoteDescription(
-                new RTCSessionDescription(msg.data as RTCSessionDescriptionInit),
-              );
-              // flush pending candidates
-              for (const c of pendingCandidates) {
-                await pc.addIceCandidate(new RTCIceCandidate(c));
+              if (pc.signalingState === 'have-local-offer') {
+                await pc.setRemoteDescription(
+                  new RTCSessionDescription(msg.data as RTCSessionDescriptionInit),
+                );
+                // flush pending candidates
+                for (const c of pendingCandidates) {
+                  await pc.addIceCandidate(new RTCIceCandidate(c));
+                }
+                pendingCandidates.length = 0;
               }
-              pendingCandidates.length = 0;
             }
 
             if (msg.type === 'ice-candidate' && msg.data) {
@@ -186,11 +300,19 @@ export function useWebRTC({
           }
         })
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED' && isCaller) {
-            // Caller creates the offer after channel ready
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            broadcast({ type: 'offer', sender: userId, data: offer });
+          if (status === 'SUBSCRIBED') {
+            // Announce we are ready
+            broadcast({ type: 'ready', sender: userId, data: null });
+
+            // If caller, wait a beat then send offer
+            // (peer may already be subscribed)
+            if (isCaller) {
+              setTimeout(async () => {
+                if (pc.signalingState === 'stable' && !pc.remoteDescription) {
+                  await createAndSendOffer(pc);
+                }
+              }, 1000);
+            }
           }
         });
 
@@ -245,7 +367,8 @@ export function useWebRTC({
     if (!screenSharing) {
       try {
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
+          video: { cursor: 'always' } as any,
+          audio: false,
         });
         const screenTrack = displayStream.getVideoTracks()[0];
 

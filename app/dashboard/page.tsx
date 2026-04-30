@@ -50,30 +50,34 @@ export default function DashboardPage() {
         const wantedSkill = desiredSkills?.find((d) => d.user_id === skill.user_id);
         const avatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
+        const collegeName = profile?.college_name || 'SkillSwap Student';
+        const yearStr = profile?.year_of_study ? `Year ${profile.year_of_study}` : '';
+        const bioText = profile?.bio || profile?.about_me || '';
+
         return {
           id: `listing-${idx}`,
           user: {
             id: skill.user_id,
-            name: profile?.username || 'Unknown',
+            name: profile?.full_name || profile?.username || 'Unknown',
             avatar,
-            college: 'SkillSwap Student',
-            year: '',
-            bio: '',
+            college: collegeName,
+            year: yearStr,
+            bio: bioText,
             skillsHave: [skill.skill_name],
             skillsWant: wantedSkill ? [wantedSkill.skill_name] : [],
             credits: profile?.credits ?? 0,
-            sessionsCompleted: 0,
+            sessionsCompleted: profile?.total_sessions ?? 0,
             rating: profile?.average_rating ?? 0,
             reviewCount: 0,
-            isVerified: false,
+            isVerified: true,
             joinedAt: profile?.created_at || '',
           },
           skillOffered: skill.skill_name,
           skillWanted: wantedSkill?.skill_name || 'Any skill',
-          description: `${profile?.username || 'A student'} is offering to teach ${skill.skill_name}.`,
-          creditsPerHour: 1,
-          availability: 'Available now',
-          tags: [skill.skill_name],
+          description: bioText || `${profile?.full_name || profile?.username || 'A student'} is offering to teach ${skill.skill_name}. Connect to start swapping skills!`,
+          creditsPerHour: 1, // Standardized for now as 1 session = 1 credit
+          availability: profile?.preferred_mode === 'online' ? 'Online' : profile?.preferred_mode === 'offline' ? 'Offline' : 'Flexible',
+          tags: [skill.skill_name, collegeName].filter(Boolean),
         };
       });
 
