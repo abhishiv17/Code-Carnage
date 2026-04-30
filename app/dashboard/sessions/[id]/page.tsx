@@ -249,9 +249,15 @@ export default function VideoRoomPage() {
     };
   }, [sessionId, sessionEnded, hangUp, router]);
 
-  /* Listen for WebRTC hangup signal */
+  /* Track if we ever connected (to distinguish real hangup from init-phase) */
+  const hasConnectedOnceRef = useRef(false);
   useEffect(() => {
-    if (connectionState === 'closed' && !sessionEnded) {
+    if (connectionState === 'connected') hasConnectedOnceRef.current = true;
+  }, [connectionState]);
+
+  /* Listen for WebRTC hangup signal — only after we've been connected once */
+  useEffect(() => {
+    if (connectionState === 'closed' && !sessionEnded && hasConnectedOnceRef.current) {
       toast.info('Session ended by your peer.');
       setSessionEnded(true);
       setTimeout(() => router.push(ROUTES.reviews), 2000);

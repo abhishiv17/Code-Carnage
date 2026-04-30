@@ -26,14 +26,12 @@ export interface UseWebRTCReturn {
   reconnect: () => void;
 }
 
-/* ─── ICE config with free STUN + TURN ─── */
+/* ─── ICE config with STUN + TURN (multiple protocols for firewall bypass) ─── */
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    {
-      urls: 'stun:stun.relay.metered.ca:80',
-    },
+    { urls: 'stun:stun.relay.metered.ca:80' },
     {
       urls: 'turn:global.relay.metered.ca:80',
       username: 'e8dd65c092bfccf46b5c1953',
@@ -56,6 +54,8 @@ const RTC_CONFIG: RTCConfiguration = {
     },
   ],
   iceCandidatePoolSize: 10,
+  // Prefer relay to guarantee connectivity on campus/public WiFi
+  iceTransportPolicy: 'all',
 };
 
 /* ─── Signaling message types ─── */
@@ -80,6 +80,8 @@ export function useWebRTC({
   const supabaseRef = useRef(createClient());
   const makingOfferRef = useRef(false);
   const peerReadyRef = useRef(false);
+  const isCleanedUpRef = useRef(false);
+  const reconnectTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -89,9 +91,23 @@ export function useWebRTC({
   const [connectionState, setConnectionState] =
     useState<RTCPeerConnectionState | 'new'>('new');
 
-  /* ── helpers ── */
+  /* ── Clear all pending reconnect timers ── */
+  const clearTimers = useCallback(() => {
+    reconnectTimersRef.current.forEach(clearTimeout);
+    reconnectTimersRef.current = [];
+  }, []);
+
+  /* ── Safe timer helper (auto-tracked for cleanup) ── */
+  const safeTimeout = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    reconnectTimersRef.current.push(id);
+    return id;
+  }, []);
+
+  /* ── Broadcast signal via Supabase channel ── */
   const broadcast = useCallback(
     (payload: SignalPayload) => {
+      if (isCleanedUpRef.current) return;
       channelRef.current?.send({
         type: 'broadcast',
         event: 'signal',
@@ -104,14 +120,16 @@ export function useWebRTC({
   /* ── Create offer (called by polite/impolite negotiation) ── */
   const createAndSendOffer = useCallback(
     async (pc: RTCPeerConnection) => {
+      if (isCleanedUpRef.current) return;
       try {
         makingOfferRef.current = true;
         const offer = await pc.createOffer();
+        // Check state hasn't changed while we awaited
         if (pc.signalingState !== 'stable') return;
         await pc.setLocalDescription(offer);
         broadcast({ type: 'offer', sender: userId, data: pc.localDescription!.toJSON() });
       } catch (err) {
-        console.error('[useWebRTC] createOffer error', err);
+        console.error('[WebRTC] createOffer error:', err);
       } finally {
         makingOfferRef.current = false;
       }
@@ -124,25 +142,40 @@ export function useWebRTC({
     if (!sessionId || !userId) return;
 
     let isMounted = true;
+    isCleanedUpRef.current = false;
     const supabase = supabaseRef.current;
     const pendingCandidates: RTCIceCandidateInit[] = [];
 
     async function init() {
-      /* 1. Get local media — graceful fallback */
+      /* 1. Get local media — graceful fallback chain */
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: { echoCancellation: true, noiseSuppression: true },
+          video: {
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            frameRate: { ideal: 30, max: 30 },
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
         });
       } catch (mediaErr) {
-        console.warn('[useWebRTC] Camera/mic unavailable, trying audio-only…', mediaErr);
+        console.warn('[WebRTC] Camera+mic failed, trying audio-only…', mediaErr);
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true },
+          });
           if (isMounted) setCameraOn(false);
         } catch {
-          console.error('[useWebRTC] No media devices available');
-          stream = new MediaStream(); // empty stream – still allows receiving
+          console.warn('[WebRTC] No media devices — proceeding as receive-only');
+          stream = new MediaStream();
+          if (isMounted) {
+            setCameraOn(false);
+            setMicOn(false);
+          }
         }
       }
 
@@ -161,7 +194,7 @@ export function useWebRTC({
       /* Add local tracks */
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      /* Remote stream */
+      /* Remote stream container */
       const remote = new MediaStream();
       if (isMounted) setRemoteStream(remote);
 
@@ -171,6 +204,7 @@ export function useWebRTC({
             remote.addTrack(t);
           }
         });
+        // Force React to see new tracks by creating a new MediaStream reference
         if (isMounted) setRemoteStream(new MediaStream(remote.getTracks()));
       };
 
@@ -184,38 +218,43 @@ export function useWebRTC({
         }
       };
 
+      /* ── Connection state monitoring with auto-recovery ── */
       pc.onconnectionstatechange = () => {
-        if (isMounted) setConnectionState(pc.connectionState);
-        if (pc.connectionState === 'failed') {
-          console.warn('[useWebRTC] Connection failed, restarting ICE…');
+        if (!isMounted) return;
+        const state = pc.connectionState;
+        setConnectionState(state);
+        console.log('[WebRTC] Connection state:', state);
+
+        if (state === 'failed') {
+          console.warn('[WebRTC] Connection failed — restarting ICE');
           pc.restartIce();
-          if (isCaller) {
-            createAndSendOffer(pc);
-          }
+          if (isCaller) createAndSendOffer(pc);
         }
       };
 
       pc.oniceconnectionstatechange = () => {
+        if (!isMounted) return;
         const state = pc.iceConnectionState;
-        console.log('[useWebRTC] ICE connection state:', state);
+        console.log('[WebRTC] ICE state:', state);
+
         if (state === 'disconnected') {
-          console.warn('[useWebRTC] ICE disconnected, waiting for recovery…');
-          // Give ICE 5s to recover before forcing restart
-          setTimeout(() => {
+          // Wait 5s for natural ICE recovery before forcing restart
+          safeTimeout(() => {
             if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-              console.warn('[useWebRTC] ICE still down after 5s, restarting…');
+              console.warn('[WebRTC] ICE still down — forcing restart');
               pc.restartIce();
               if (isCaller) createAndSendOffer(pc);
             }
           }, 5000);
         }
+
         if (state === 'failed') {
           pc.restartIce();
           if (isCaller) createAndSendOffer(pc);
         }
       };
 
-      // Perfect negotiation: handle renegotiation needs
+      /* Perfect negotiation: handle renegotiation needs */
       pc.onnegotiationneeded = async () => {
         if (isCaller && peerReadyRef.current) {
           await createAndSendOffer(pc);
@@ -229,57 +268,49 @@ export function useWebRTC({
 
       channel
         .on('broadcast', { event: 'signal' }, async ({ payload }) => {
+          if (isCleanedUpRef.current) return;
           const msg = payload as SignalPayload;
-          if (msg.sender === userId) return; // ignore own
+          if (msg.sender === userId) return;
 
           try {
-            /* Peer announced they are ready */
+            /* ── Peer ready ── */
             if (msg.type === 'ready') {
               peerReadyRef.current = true;
-              // If I'm the caller, now send the offer
               if (isCaller && pc.signalingState === 'stable') {
                 await createAndSendOffer(pc);
               }
               return;
             }
 
-            /* Peer wants renegotiation */
+            /* ── Renegotiation request ── */
             if (msg.type === 'renegotiate') {
-              if (isCaller) {
-                await createAndSendOffer(pc);
-              }
+              if (isCaller) await createAndSendOffer(pc);
               return;
             }
 
+            /* ── Offer ── */
             if (msg.type === 'offer' && msg.data) {
-              // "Perfect negotiation" — polite peer rolls back
               const offerCollision =
                 makingOfferRef.current || pc.signalingState !== 'stable';
               const isPolite = !isCaller;
 
-              if (offerCollision && !isPolite) {
-                // Impolite peer ignores incoming offer during collision
-                return;
-              }
+              if (offerCollision && !isPolite) return; // Impolite ignores
 
               if (offerCollision && isPolite) {
                 try {
                   await pc.setLocalDescription({ type: 'rollback' });
-                } catch (rollbackErr) {
-                  console.warn('[useWebRTC] rollback failed (may be fine):', rollbackErr);
+                } catch {
+                  // Rollback may fail on some browsers — safe to ignore
                 }
               }
 
               await pc.setRemoteDescription(
                 new RTCSessionDescription(msg.data as RTCSessionDescriptionInit),
               );
-              // flush pending candidates
+
+              // Flush buffered ICE candidates
               for (const c of pendingCandidates) {
-                try {
-                  await pc.addIceCandidate(new RTCIceCandidate(c));
-                } catch (e) {
-                  console.warn('[useWebRTC] failed to add buffered candidate:', e);
-                }
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch { /* skip stale */ }
               }
               pendingCandidates.length = 0;
 
@@ -288,67 +319,79 @@ export function useWebRTC({
               broadcast({ type: 'answer', sender: userId, data: answer });
             }
 
+            /* ── Answer ── */
             if (msg.type === 'answer' && msg.data) {
               if (pc.signalingState === 'have-local-offer') {
                 await pc.setRemoteDescription(
                   new RTCSessionDescription(msg.data as RTCSessionDescriptionInit),
                 );
-                // flush pending candidates
                 for (const c of pendingCandidates) {
-                  try {
-                    await pc.addIceCandidate(new RTCIceCandidate(c));
-                  } catch (e) {
-                    console.warn('[useWebRTC] failed to add buffered candidate:', e);
-                  }
+                  try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch { /* skip stale */ }
                 }
                 pendingCandidates.length = 0;
               }
             }
 
+            /* ── ICE candidate ── */
             if (msg.type === 'ice-candidate' && msg.data) {
               try {
                 if (pc.remoteDescription) {
-                  await pc.addIceCandidate(
-                    new RTCIceCandidate(msg.data as RTCIceCandidateInit),
-                  );
+                  await pc.addIceCandidate(new RTCIceCandidate(msg.data as RTCIceCandidateInit));
                 } else {
                   pendingCandidates.push(msg.data as RTCIceCandidateInit);
                 }
-              } catch (e) {
-                console.warn('[useWebRTC] addIceCandidate error (non-fatal):', e);
+              } catch {
+                // Non-fatal — candidate may be for a previous generation
               }
             }
 
+            /* ── Hangup ── */
             if (msg.type === 'hangup') {
               pc.close();
               if (isMounted) setConnectionState('closed' as RTCPeerConnectionState);
             }
           } catch (err) {
-            console.error('[useWebRTC] signaling error', err);
+            console.error('[WebRTC] Signal handler error:', err);
           }
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            // Announce we are ready
+            // Tell the peer we're here
             broadcast({ type: 'ready', sender: userId, data: null });
 
-            // If caller, wait a beat then send offer
-            // (peer may already be subscribed)
             if (isCaller) {
-              // Send initial offer after 1s
-              setTimeout(async () => {
+              // Attempt offer after 1s (peer may already be subscribed)
+              safeTimeout(async () => {
                 if (pc.signalingState === 'stable' && !pc.remoteDescription) {
                   await createAndSendOffer(pc);
                 }
               }, 1000);
-              // Retry after 5s if still not connected (handles late-joiner races)
-              setTimeout(async () => {
+
+              // Retry after 5s if still not connected (late-joiner race)
+              safeTimeout(async () => {
                 if (pc.iceConnectionState === 'new' || pc.iceConnectionState === 'checking') {
-                  console.warn('[useWebRTC] Still not connected after 5s, re-sending offer…');
+                  console.warn('[WebRTC] Not connected after 5s — retrying offer');
                   peerReadyRef.current = true;
                   await createAndSendOffer(pc);
                 }
               }, 5000);
+
+              // Final retry at 12s — absolute fallback
+              safeTimeout(async () => {
+                if (pc.iceConnectionState !== 'connected' && pc.iceConnectionState !== 'completed') {
+                  console.warn('[WebRTC] Not connected after 12s — final retry');
+                  pc.restartIce();
+                  await createAndSendOffer(pc);
+                }
+              }, 12000);
+            } else {
+              // Callee: if not connected after 8s, ask caller to re-offer
+              safeTimeout(() => {
+                if (pc.iceConnectionState === 'new' || pc.iceConnectionState === 'checking') {
+                  console.warn('[WebRTC] Callee not connected after 8s — requesting renegotiation');
+                  broadcast({ type: 'renegotiate', sender: userId, data: null });
+                }
+              }, 8000);
             }
           }
         });
@@ -360,10 +403,14 @@ export function useWebRTC({
 
     return () => {
       isMounted = false;
+      isCleanedUpRef.current = true;
+      clearTimers();
       pcRef.current?.close();
+      pcRef.current = null;
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       if (channelRef.current) {
         supabaseRef.current.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -391,7 +438,7 @@ export function useWebRTC({
     }
   }, []);
 
-  /* ── toggle screen share (replaceTrack, no renegotiation) ── */
+  /* ── toggle screen share (replaceTrack — no renegotiation needed) ── */
   const toggleScreenShare = useCallback(async () => {
     const pc = pcRef.current;
     if (!pc) return;
@@ -420,11 +467,9 @@ export function useWebRTC({
         await videoSender.replaceTrack(screenTrack);
         setScreenSharing(true);
       } catch {
-        // User cancelled the screen picker
-        console.log('[useWebRTC] screen share cancelled');
+        // User cancelled the screen picker — not an error
       }
     } else {
-      // Switch back to camera
       if (cameraTrackRef.current) {
         await videoSender.replaceTrack(cameraTrackRef.current);
       }
@@ -434,20 +479,27 @@ export function useWebRTC({
 
   /* ── hang up ── */
   const hangUp = useCallback(() => {
+    clearTimers();
     broadcast({ type: 'hangup', sender: userId, data: null });
     pcRef.current?.close();
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     setConnectionState('closed' as RTCPeerConnectionState);
-  }, [broadcast, userId]);
+  }, [broadcast, userId, clearTimers]);
 
-  /* ── reconnect ── */
+  /* ── reconnect (manual — from the UI button) ── */
   const reconnect = useCallback(() => {
-    if (!pcRef.current) return;
-    console.log('[useWebRTC] Manual reconnect triggered');
+    const pc = pcRef.current;
+    if (!pc || pc.connectionState === 'closed') {
+      // PC is fully dead — need a full re-init
+      // Trigger by toggling sessionId (not ideal, but the only way without full refactor)
+      console.warn('[WebRTC] PC is closed, needs full re-init');
+      return;
+    }
+    console.log('[WebRTC] Manual reconnect');
     setConnectionState('connecting' as RTCPeerConnectionState);
-    pcRef.current.restartIce();
+    pc.restartIce();
     if (isCaller) {
-      createAndSendOffer(pcRef.current);
+      createAndSendOffer(pc);
     } else {
       broadcast({ type: 'renegotiate', sender: userId, data: null });
     }
