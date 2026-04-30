@@ -224,6 +224,40 @@ export default function VideoRoomPage() {
     remoteVideoRef.current?.requestFullscreen?.();
   }, []);
 
+  /* Listen for session ended by peer (DB status change) */
+  useEffect(() => {
+    if (!sessionId || sessionEnded) return;
+    const supabase = createClient();
+    const sessionChannel = supabase
+      .channel(`session-status-${sessionId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
+        (payload) => {
+          if (payload.new.status === 'completed') {
+            toast.info('Session ended by your peer.');
+            setSessionEnded(true);
+            hangUp();
+            setTimeout(() => router.push(ROUTES.reviews), 2000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(sessionChannel);
+    };
+  }, [sessionId, sessionEnded, hangUp, router]);
+
+  /* Listen for WebRTC hangup signal */
+  useEffect(() => {
+    if (connectionState === 'closed' && !sessionEnded) {
+      toast.info('Session ended by your peer.');
+      setSessionEnded(true);
+      setTimeout(() => router.push(ROUTES.reviews), 2000);
+    }
+  }, [connectionState, sessionEnded, router]);
+
   /* End session — calls the API to process credits */
   const handleEndSession = useCallback(async () => {
     if (endingSession || sessionEnded) return;
