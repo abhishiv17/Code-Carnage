@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import type { MarketplaceListing } from '@/lib/mock-data';
-import { Clock, Coins, ArrowRightLeft, BadgeCheck, Check, Send } from 'lucide-react';
+import { Clock, Coins, ArrowRightLeft, BadgeCheck, Check, Send, Trophy, Zap } from 'lucide-react';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
@@ -96,6 +96,22 @@ export function SkillCard({ listing }: SkillCardProps) {
           <span className="font-medium">{listing.user.rating}</span>
         </div>
       </div>
+
+      {/* Badges */}
+      {(listing.user.rating >= 4.8 || listing.user.sessionsCompleted >= 5) && (
+        <div className="flex gap-2 mb-3">
+          {listing.user.rating >= 4.8 && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-accent-amber bg-accent-amber/10 border border-accent-amber/20 px-2 py-0.5 rounded-full">
+              <Trophy size={10} /> Top Teacher
+            </span>
+          )}
+          {listing.user.sessionsCompleted >= 5 && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-accent-violet bg-accent-violet/10 border border-accent-violet/20 px-2 py-0.5 rounded-full">
+              <Zap size={10} /> Active Swapper
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Skill swap */}
       <div className="flex items-center gap-2 mb-3">
