@@ -229,6 +229,7 @@ export function ChatbotWidget() {
           <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-[var(--glass-border)] bg-[var(--bg-surface)] shrink-0">
             {attachedImage && (
               <div className="mb-2 relative w-16 h-16 rounded-lg overflow-hidden border border-[var(--glass-border)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={attachedImage} alt="Attached" className="w-full h-full object-cover" />
                 <button type="button" onClick={() => setAttachedImage(null)} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white"><X size={12} /></button>
               </div>

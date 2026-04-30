@@ -236,7 +236,7 @@ export default function MessagesPage() {
       }
     }
     loadMessages();
-  }, [selectedChat, profile?.id, connections]);
+  }, [selectedChat, profile?.id, connections, activeChats]);
 
   const handleAcceptRequest = async (connectionId: string) => {
     const supabase = createClient();
