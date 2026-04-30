@@ -25,6 +25,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  themeColor: '#bdf2b5',
 };
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export const metadata: Metadata = {
   description:
     'Exchange skills with fellow students. Teach what you know, learn what you want. No money needed — just skill credits.',
   keywords: ['skill exchange', 'peer learning', 'college', 'barter', 'skill credits'],
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +61,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </ThemeProvider>
           </UserProvider>
         </QueryProvider>
+        
+        {/* PWA Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
