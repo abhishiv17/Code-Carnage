@@ -11,7 +11,7 @@ import Image from 'next/image';
 
 export default function MessagesPage() {
   const { profile } = useUser();
-  const [selectedChat, setSelectedChat] = useState<string | null>('1');
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'messages' | 'requests'>('messages');
   const [inputText, setInputText] = useState('');
   
@@ -304,6 +304,9 @@ export default function MessagesPage() {
       }
       
       toast.success('Request accepted! You can now message each other.');
+      // Auto-switch to messages tab and select the newly accepted chat
+      setActiveTab('messages');
+      setSelectedChat(connectionId);
     } else toast.error('Failed to accept request.');
   };
 

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { SkillBadge } from '@/components/shared/SkillBadge';
 import type { MarketplaceListing } from '@/lib/mock-data';
-import { Clock, Coins, ArrowRightLeft, BadgeCheck, Check, Send, Trophy, Zap } from 'lucide-react';
+import { Clock, Coins, ArrowRightLeft, BadgeCheck, Check, Send, Trophy, Zap, MessageSquare } from 'lucide-react';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
@@ -17,8 +18,23 @@ interface SkillCardProps {
 
 export function SkillCard({ listing }: SkillCardProps) {
   const { user: currentUser } = useUser();
+  const router = useRouter();
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connected, setConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'none' | 'pending' | 'accepted'>('none');
+
+  // Check existing connection status on mount
+  useEffect(() => {
+    if (!currentUser?.id || currentUser.id === listing.user.id) return;
+    const supabase = createClient();
+    supabase
+      .from('connections')
+      .select('status')
+      .or(`and(requester_id.eq.${currentUser.id},receiver_id.eq.${listing.user.id}),and(requester_id.eq.${listing.user.id},receiver_id.eq.${currentUser.id})`)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setConnectionStatus(data.status as 'pending' | 'accepted');
+      });
+  }, [currentUser?.id, listing.user.id]);
 
   const handleConnect = async () => {
     if (!currentUser) {
@@ -59,7 +75,7 @@ export function SkillCard({ listing }: SkillCardProps) {
         link: `/dashboard/user/${currentUser.id}`
       });
       
-      setConnected(true);
+      setConnectionStatus('pending');
       toast.success(`Connection request sent to ${listing.user.name}!`);
     } catch (error: any) {
       console.error(error);
@@ -152,11 +168,20 @@ export function SkillCard({ listing }: SkillCardProps) {
         <div className="relative z-10">
           <GradientButton 
             size="sm" 
-            onClick={handleConnect} 
-            disabled={isConnecting || connected}
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              if (connectionStatus === 'accepted') {
+                router.push(`/dashboard/messages`);
+              } else {
+                handleConnect();
+              }
+            }} 
+            disabled={isConnecting || connectionStatus === 'pending'}
             className="flex items-center gap-2"
           >
-            {connected ? (
+            {connectionStatus === 'accepted' ? (
+              <><MessageSquare size={14} /> Message</>
+            ) : connectionStatus === 'pending' ? (
               <><Check size={14} /> Requested</>
             ) : isConnecting ? (
               <><Send size={14} className="animate-pulse" /> Sending...</>

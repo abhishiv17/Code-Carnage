@@ -98,7 +98,7 @@ export default function UserProfilePage() {
           user_id: id,
           type: 'connection_request',
           title: 'New Connection Request',
-          message: `${currentUser.user_metadata?.username || 'Someone'} wants to connect with you!`,
+          message: `${currentUser.full_name || currentUser.username || 'Someone'} wants to connect with you!`,
           link: `/dashboard/user/${currentUser.id}`
         });
 
@@ -119,7 +119,7 @@ export default function UserProfilePage() {
             user_id: id,
             type: 'connection_accepted',
             title: 'Connection Accepted',
-            message: `${currentUser.user_metadata?.username || 'Someone'} accepted your connection request!`,
+            message: `${currentUser.full_name || currentUser.username || 'Someone'} accepted your connection request!`,
             link: `/dashboard/messages`
           });
 
