@@ -13,10 +13,12 @@
 ---
 
 ## 🏆 Hackathon Demo Highlights
-- **100% Live Database:** Zero mock data. Every feature is fully integrated with Supabase.
-- **End-to-End P2P Video:** Fully working WebRTC rooms for live skill-swapping.
+- **100% Live Database:** Zero mock data. Every feature is fully integrated with Supabase (even the landing page stats!).
+- **PWA Mobile App:** Fully installable as a native app on iOS and Android with custom icons and service workers.
+- **End-to-End P2P Video:** Fully working WebRTC rooms for live skill-swapping with synced session-end and auto-reconnect logic.
 - **Real-Time Everything:** Instant notifications, online presence, and live direct messaging.
 - **AI-Powered Matching:** Groq LLaMA-3.1 engine intelligently pairs users based on desired/offered skills.
+- **Social Sharing & Badges:** Automatically award "Top Teacher" badges and let users boast about 5-star reviews on X (Twitter) and LinkedIn.
 
 ---
 
@@ -35,14 +37,17 @@
 - [x] Guided onboarding flow (skill selection + profile setup)
 
 ### 📊 Dashboard & Community
-- [x] **Marketplace** — Browse and discover skill listings from other students
-- [x] **AI Matches** — Groq-powered AI matching engine finds compatible skill-swap partners
-- [x] **Campus Help Board** — Public feed where students can post urgent bounties for help in exchange for credits
-- [x] **Sessions** — View pending, active, and completed sessions
-- [x] **Rich Portfolios** — Full profile editor with academic info, GitHub, LinkedIn, and portfolio links
-- [x] **Gamification & Endorsements** — Endorse your peers for specific skills to award them shiny badges on their profiles
-- [x] **Reviews** — Rate and review your peers after sessions
-- [x] **Leaderboard** — Top contributors ranked by sessions, ratings, and credits
+- **Marketplace** — Browse and discover skill listings from other students
+  - 🔍 **Live Search:** Instantly filter users, skills, and tags
+  - 🏆 **Dynamic Badges:** Earn "Top Teacher" (4.8+ stars) and "Active Swapper" (5+ sessions) badges
+- **AI Matches** — Groq-powered AI matching engine finds compatible skill-swap partners
+- **Campus Help Board** — Public feed where students can post urgent bounties for help in exchange for credits
+- **Sessions** — View pending, active, and completed sessions
+- **Rich Portfolios** — Full profile editor with academic info, GitHub, LinkedIn, and portfolio links
+- **Gamification & Endorsements** — Endorse your peers for specific skills to award them shiny badges on their profiles
+- **Reviews** — Rate and review your peers after sessions
+  - 🔗 **Social Sharing:** One-click boast to Twitter/LinkedIn for 4+ star reviews
+- **Leaderboard** — Top contributors ranked by sessions, ratings, and credits
 
 ### 🤖 AI-Powered Features
 - [x] **Smart Matchmaker** — AI recommends specific peers based on skills, college, city, and preferences

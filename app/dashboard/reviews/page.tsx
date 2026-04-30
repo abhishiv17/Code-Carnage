@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
-import { Star, Loader2 } from 'lucide-react';
+import { Star, Loader2, Twitter, Linkedin, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { authFetch } from '@/lib/authFetch';
@@ -173,9 +173,38 @@ export default function ReviewsPage() {
                         ))}
                       </div>
                       <p className="text-sm text-[var(--text-muted)] leading-relaxed">{review.feedback}</p>
-                      <p className="text-xs text-[var(--text-muted)] mt-2">
-                        {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
+                      
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--glass-border)]">
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        
+                        {/* Social Share */}
+                        {review.rating >= 4 && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)] mr-1">Share</span>
+                            <button 
+                              onClick={() => {
+                                const text = encodeURIComponent(`I just got a ${review.rating}-star review on SkillSwap from ${reviewerName}!\n\n"${review.feedback}"\n\nJoin the skill barter movement today: `);
+                                window.open(`https://twitter.com/intent/tweet?text=${text}&url=https://code-carnage.vercel.app`, '_blank');
+                              }}
+                              className="p-1.5 rounded-md hover:bg-sky-500/10 text-sky-500 transition-colors"
+                              title="Share on Twitter / X"
+                            >
+                              <Twitter size={14} />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://code-carnage.vercel.app`, '_blank');
+                              }}
+                              className="p-1.5 rounded-md hover:bg-blue-600/10 text-blue-600 transition-colors"
+                              title="Share on LinkedIn"
+                            >
+                              <Linkedin size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </GlassCard>

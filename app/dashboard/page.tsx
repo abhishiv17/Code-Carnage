@@ -6,11 +6,12 @@ import { useUser } from '@/hooks/useUser';
 import { StatsOverview } from '@/components/dashboard/StatsOverview';
 import { SkillCard } from '@/components/dashboard/SkillCard';
 import type { MarketplaceListing } from '@/lib/mock-data';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useUser();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -104,9 +105,25 @@ export default function DashboardPage() {
 
       {/* Listings grid */}
       <div>
-        <h2 className="font-heading text-lg font-semibold text-[var(--text-primary)] mb-4">
-          Available Swaps
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h2 className="font-heading text-lg font-semibold text-[var(--text-primary)]">
+            Available Swaps
+          </h2>
+          {/* Search Bar */}
+          <div className="relative w-full sm:w-72">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={16} className="text-[var(--text-muted)]" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search skills, users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-accent-violet/50 transition-colors"
+            />
+          </div>
+        </div>
+        
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 size={24} className="animate-spin text-accent-violet" />
@@ -116,11 +133,33 @@ export default function DashboardPage() {
             No listings yet. Be the first to add your skills!
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {listings.map((listing) => (
-              <SkillCard key={listing.id} listing={listing} />
-            ))}
-          </div>
+          (() => {
+            const filteredListings = listings.filter((listing) => {
+              const q = searchQuery.toLowerCase();
+              return (
+                listing.skillOffered.toLowerCase().includes(q) ||
+                listing.skillWanted.toLowerCase().includes(q) ||
+                listing.user.name.toLowerCase().includes(q) ||
+                listing.tags.some(tag => tag.toLowerCase().includes(q))
+              );
+            });
+
+            if (filteredListings.length === 0) {
+              return (
+                <p className="text-center py-12 text-[var(--text-muted)]">
+                  No listings found matching "{searchQuery}".
+                </p>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {filteredListings.map((listing) => (
+                  <SkillCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            );
+          })()
         )}
       </div>
     </div>
