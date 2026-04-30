@@ -30,7 +30,7 @@ export function StatsOverview() {
       }
     };
     fetchCounts();
-  }, [user]);
+  }, [user, supabase]);
 
   const stats = [
     {
