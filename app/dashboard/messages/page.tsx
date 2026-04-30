@@ -291,6 +291,18 @@ export default function MessagesPage() {
     const { error } = await supabase.from('connections').update({ status: 'accepted' }).eq('id', connectionId);
     if (!error) {
       setConnections(prev => prev.map(c => c.id === connectionId ? { ...c, status: 'accepted' } : c));
+      
+      const req = pendingRequests.find(r => r.id === connectionId);
+      if (req && req.requester_id) {
+         await supabase.from('notifications').insert({
+            user_id: req.requester_id,
+            type: 'connection_accepted',
+            title: 'Connection Accepted',
+            message: `${profile?.full_name || profile?.username || 'Someone'} accepted your connection request!`,
+            link: `/dashboard/messages`
+         });
+      }
+      
       toast.success('Request accepted! You can now message each other.');
     } else toast.error('Failed to accept request.');
   };

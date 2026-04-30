@@ -24,6 +24,7 @@ export default function UserProfilePage() {
   // Connection states
   const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'accepted' | 'rejected'>('none');
   const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [isReceiver, setIsReceiver] = useState(false);
   const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
 
   useEffect(() => {
@@ -59,9 +60,8 @@ export default function UserProfilePage() {
 
       if (connection) {
         setConnectionId(connection.id);
-        // If the other person requested us and it's pending, they are "pending"
-        // If we requested them, it's "pending"
         setFollowStatus(connection.status as 'pending' | 'accepted' | 'rejected');
+        setIsReceiver(connection.receiver_id === currentUser.id);
       }
     }
     fetchConnectionStatus();
@@ -92,20 +92,51 @@ export default function UserProfilePage() {
           }, { onConflict: 'requester_id,receiver_id' });
           
         if (error) throw error;
+        
+        // Send notification to the receiver
+        await supabase.from('notifications').insert({
+          user_id: id,
+          type: 'connection_request',
+          title: 'New Connection Request',
+          message: `${currentUser.user_metadata?.username || 'Someone'} wants to connect with you!`,
+          link: `/dashboard/user/${currentUser.id}`
+        });
+
         setFollowStatus('pending');
         toast.success('Follow request sent!');
       } else if (followStatus === 'pending') {
-        // Cancel request (if we were the requester)
-        const { error } = await supabase
-          .from('connections')
-          .delete()
-          .eq('requester_id', currentUser.id)
-          .eq('receiver_id', id);
+        if (isReceiver) {
+          // Accept request
+          const { error } = await supabase
+            .from('connections')
+            .update({ status: 'accepted' })
+            .eq('id', connectionId);
+            
+          if (error) throw error;
           
-        if (error) throw error;
-        setFollowStatus('none');
-        setConnectionId(null);
-        toast.info('Follow request cancelled.');
+          // Notify the requester that their request was accepted
+          await supabase.from('notifications').insert({
+            user_id: id,
+            type: 'connection_accepted',
+            title: 'Connection Accepted',
+            message: `${currentUser.user_metadata?.username || 'Someone'} accepted your connection request!`,
+            link: `/dashboard/messages`
+          });
+
+          setFollowStatus('accepted');
+          toast.success('Connection accepted! You can now message them.');
+        } else {
+          // Cancel request (if we were the requester)
+          const { error } = await supabase
+            .from('connections')
+            .delete()
+            .eq('id', connectionId);
+            
+          if (error) throw error;
+          setFollowStatus('none');
+          setConnectionId(null);
+          toast.info('Follow request cancelled.');
+        }
       } else if (followStatus === 'accepted') {
         // Unfollow
         const { error } = await supabase
@@ -201,11 +232,12 @@ export default function UserProfilePage() {
                   <GradientButton 
                     onClick={handleFollow}
                     disabled={isUpdatingFollow}
-                    variant={followStatus !== 'none' && followStatus !== 'rejected' ? 'outline' : 'primary'}
+                    variant={followStatus !== 'none' && followStatus !== 'rejected' && !(followStatus === 'pending' && isReceiver) ? 'outline' : 'primary'}
                     className="flex items-center gap-2"
                   >
                     {(followStatus === 'none' || followStatus === 'rejected') && <><UserPlus size={16} /> Follow</>}
-                    {followStatus === 'pending' && <><Clock size={16} /> Requested</>}
+                    {followStatus === 'pending' && !isReceiver && <><Clock size={16} /> Requested</>}
+                    {followStatus === 'pending' && isReceiver && <><Check size={16} /> Accept Request</>}
                     {followStatus === 'accepted' && <><Check size={16} /> Following</>}
                   </GradientButton>
                   <button 
