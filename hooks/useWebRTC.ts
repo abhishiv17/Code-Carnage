@@ -23,6 +23,7 @@ export interface UseWebRTCReturn {
   toggleMic: () => void;
   toggleScreenShare: () => Promise<void>;
   hangUp: () => void;
+  reconnect: () => void;
 }
 
 /* ─── ICE config with free STUN + TURN ─── */
@@ -403,6 +404,19 @@ export function useWebRTC({
     setConnectionState('closed' as RTCPeerConnectionState);
   }, [broadcast, userId]);
 
+  /* ── reconnect ── */
+  const reconnect = useCallback(() => {
+    if (!pcRef.current) return;
+    console.log('[useWebRTC] Manual reconnect triggered');
+    setConnectionState('connecting' as RTCPeerConnectionState);
+    pcRef.current.restartIce();
+    if (isCaller) {
+      createAndSendOffer(pcRef.current);
+    } else {
+      broadcast({ type: 'renegotiate', sender: userId, data: null });
+    }
+  }, [isCaller, createAndSendOffer, broadcast, userId]);
+
   return {
     localStream,
     remoteStream,
@@ -414,5 +428,6 @@ export function useWebRTC({
     toggleMic,
     toggleScreenShare,
     hangUp,
+    reconnect,
   };
 }

@@ -25,6 +25,7 @@ import {
   WifiOff,
   Send,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -197,6 +198,7 @@ export default function VideoRoomPage() {
     toggleMic,
     toggleScreenShare,
     hangUp,
+    reconnect,
   } = useWebRTC({
     sessionId,
     userId: user?.id ?? '',
@@ -567,13 +569,22 @@ export default function VideoRoomPage() {
         </button>
       </div>
 
-      {/* Connection warning */}
-      {connectionState === 'failed' && (
-        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-accent-amber/10 border border-accent-amber/20">
-          <AlertTriangle size={16} className="text-accent-amber" />
-          <span className="text-sm text-accent-amber">
-            Connection failed. Attempting to reconnect automatically…
-          </span>
+      {/* Connection warning / Rejoin */}
+      {(connectionState === 'failed' || connectionState === 'disconnected') && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3 px-5 rounded-xl bg-accent-amber/10 border border-accent-amber/20">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="text-accent-amber" />
+            <span className="text-sm text-accent-amber font-medium">
+              Connection lost. The video feed has stopped.
+            </span>
+          </div>
+          <button
+            onClick={reconnect}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-amber/20 hover:bg-accent-amber/30 text-accent-amber transition-colors text-sm font-semibold"
+          >
+            <RefreshCw size={14} />
+            Rejoin Session
+          </button>
         </div>
       )}
     </div>
