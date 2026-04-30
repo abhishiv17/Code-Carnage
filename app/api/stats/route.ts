@@ -7,16 +7,25 @@ export async function GET() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const [profilesRes, skillsRes, sessionsRes] = await Promise.all([
+  const [profilesRes, skillsRes, sessionsRes, ratingsRes] = await Promise.all([
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
     supabase.from('skills').select('id', { count: 'exact', head: true }),
     supabase.from('sessions').select('id', { count: 'exact', head: true }),
+    supabase.from('profiles').select('average_rating').not('average_rating', 'eq', 0),
   ]);
+
+  // Calculate platform-wide average rating
+  let avgRating = 4.7;
+  if (ratingsRes.data && ratingsRes.data.length > 0) {
+    const sum = ratingsRes.data.reduce((acc: number, p: any) => acc + (p.average_rating || 0), 0);
+    avgRating = parseFloat((sum / ratingsRes.data.length).toFixed(1));
+  }
 
   return NextResponse.json({
     users: profilesRes.count || 0,
     skills: skillsRes.count || 0,
     sessions: sessionsRes.count || 0,
+    avgRating,
   }, {
     headers: {
       'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',

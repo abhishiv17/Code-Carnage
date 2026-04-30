@@ -1,46 +1,10 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { APP_NAME, ROUTES } from '@/lib/constants';
-import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
 
 export function Footer() {
-  const [stats, setStats] = useState({ users: 0, skills: 0, sessions: 0 });
-
-  useEffect(() => {
-    fetch('/api/stats')
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(() => {});
-  }, []);
-
   return (
     <footer className="border-t border-[var(--border-soft)] bg-[var(--bg-surface)]">
       <div className="mx-auto max-w-7xl px-6 py-12">
-
-        {/* Live Stats Bar */}
-        <div className="grid grid-cols-3 gap-6 mb-10 p-6 rounded-2xl glass border border-[var(--glass-border)]">
-          <div className="text-center">
-            <p className="font-heading font-bold text-2xl text-[var(--text-primary)]">
-              <AnimatedCounter target={stats.users} />
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">Students Registered</p>
-          </div>
-          <div className="text-center border-x border-[var(--glass-border)]">
-            <p className="font-heading font-bold text-2xl text-[var(--text-primary)]">
-              <AnimatedCounter target={stats.skills} />
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">Skills Listed</p>
-          </div>
-          <div className="text-center">
-            <p className="font-heading font-bold text-2xl text-[var(--text-primary)]">
-              <AnimatedCounter target={stats.sessions} />
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">Sessions Completed</p>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">

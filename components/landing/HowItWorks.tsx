@@ -1,5 +1,7 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
-import { PLATFORM_STATS } from '@/lib/mock-data';
 import { UserPlus, Sparkles, Video, Star, Users } from 'lucide-react';
 
 const steps = [
@@ -9,14 +11,28 @@ const steps = [
   { number: '04', icon: Video, title: 'Jump Into a Session', description: 'Schedule a live video call. Teach one hour, learn one hour. Credits flow automatically.', color: 'text-accent-rose', bg: 'bg-section-rose' },
 ];
 
-const stats = [
-  { value: PLATFORM_STATS.totalUsers, suffix: '+', label: 'Students' },
-  { value: PLATFORM_STATS.totalSessions, suffix: '+', label: 'Sessions' },
-  { value: PLATFORM_STATS.skillsListed, suffix: '+', label: 'Skills Listed' },
-  { value: PLATFORM_STATS.avgRating, suffix: '', label: 'Avg Rating', decimals: 1, prefix: '⭐ ' },
-];
-
 export function HowItWorks() {
+  const [stats, setStats] = useState([
+    { value: 0, suffix: '+', label: 'Students' },
+    { value: 0, suffix: '+', label: 'Sessions' },
+    { value: 0, suffix: '+', label: 'Skills Listed' },
+    { value: 0, suffix: '', label: 'Avg Rating', decimals: 1, prefix: '⭐ ' },
+  ]);
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => {
+        setStats([
+          { value: data.users || 0, suffix: '+', label: 'Students' },
+          { value: data.sessions || 0, suffix: '+', label: 'Sessions' },
+          { value: data.skills || 0, suffix: '+', label: 'Skills Listed' },
+          { value: data.avgRating || 4.7, suffix: '', label: 'Avg Rating', decimals: 1, prefix: '⭐ ' },
+        ]);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section id="how-it-works" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-5xl px-6">
@@ -65,7 +81,7 @@ export function HowItWorks() {
           </div>
         </div>
 
-        {/* Stats — no card, just numbers on a tinted background strip */}
+        {/* Stats — dynamic from database */}
         <div id="stats" className="bg-section-surface rounded-3xl py-12 px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat) => (
