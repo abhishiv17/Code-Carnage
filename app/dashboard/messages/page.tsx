@@ -132,6 +132,10 @@ export default function MessagesPage() {
   const [connections, setConnections] = useState<any[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
 
+  // Derived state — defined early so useEffect hooks can reference them
+  const pendingRequests = connections.filter(c => c.receiver_id === profile?.id && c.status === 'pending');
+  const activeChats = connections.filter(c => c.status === 'accepted');
+
   useEffect(() => {
     async function loadConnections() {
       if (!profile?.id) return;
@@ -236,7 +240,7 @@ export default function MessagesPage() {
       }
     }
     loadMessages();
-  }, [selectedChat, profile?.id, connections, activeChats]);
+  }, [selectedChat, profile?.id, connections]);
 
   const handleAcceptRequest = async (connectionId: string) => {
     const supabase = createClient();
@@ -273,8 +277,6 @@ export default function MessagesPage() {
     else setInputText('');
   };
 
-  const pendingRequests = connections.filter(c => c.receiver_id === profile?.id && c.status === 'pending');
-  const activeChats = connections.filter(c => c.status === 'accepted');
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-page-in">
