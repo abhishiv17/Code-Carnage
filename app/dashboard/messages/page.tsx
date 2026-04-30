@@ -132,9 +132,17 @@ export default function MessagesPage() {
   const [connections, setConnections] = useState<any[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
 
-  // Derived state — defined early so useEffect hooks can reference them
   const pendingRequests = connections.filter(c => c.receiver_id === profile?.id && c.status === 'pending');
   const activeChats = connections.filter(c => c.status === 'accepted');
+
+  // Refs for realtime listeners to access current state without triggering re-renders
+  const selectedChatRef = useRef(selectedChat);
+  const connectionsRef = useRef(connections);
+
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+    connectionsRef.current = connections;
+  }, [selectedChat, connections]);
 
   useEffect(() => {
     async function loadConnections() {
@@ -183,37 +191,73 @@ export default function MessagesPage() {
     });
 
     // Subscribe to new messages globally
-    const msgSub = supabase.channel('messages_channel')
+    const realtimeSub = supabase.channel('messages_and_connections')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const newMessage = payload.new;
-        // If the message involves the current user, update state
         if (newMessage.sender_id === profile.id || newMessage.receiver_id === profile.id) {
-           setChatMessages(prev => {
-             // Avoid duplicates
-             if (prev.find(m => m.id === newMessage.id)) return prev;
-             return [...prev, newMessage];
-           });
+           const currentSelectedChat = selectedChatRef.current;
+           const currentConnections = connectionsRef.current;
            
-           // If we are receiving a message and it's from the currently selected chat, mark it read
-           if (newMessage.receiver_id === profile.id) {
-              const chat = connections.find(c => c.id === selectedChat);
-              const otherUserId = chat?.requester_id === profile.id ? chat?.receiver_id : chat?.requester_id;
-              if (newMessage.sender_id === otherUserId) {
-                 supabase.from('messages').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', newMessage.id).then();
-              }
+           const chat = currentConnections.find((c: any) => c.id === currentSelectedChat);
+           const otherUserId = chat?.requester_id === profile.id ? chat?.receiver_id : chat?.requester_id;
+
+           // Only append to chatMessages if it belongs to the active chat
+           if (
+             (newMessage.sender_id === profile.id && newMessage.receiver_id === otherUserId) ||
+             (newMessage.sender_id === otherUserId && newMessage.receiver_id === profile.id)
+           ) {
+               setChatMessages(prev => {
+                 if (prev.find(m => m.id === newMessage.id)) return prev;
+                 return [...prev, newMessage];
+               });
+               
+               if (newMessage.receiver_id === profile.id) {
+                  supabase.from('messages').update({ is_read: true, read_at: new Date().toISOString() }).eq('id', newMessage.id).then();
+               }
            }
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
          setChatMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'connections' }, async (payload) => {
+         const newConn = payload.new;
+         if (newConn.requester_id === profile.id || newConn.receiver_id === profile.id) {
+            const { data } = await supabase
+              .from('connections')
+              .select(`
+                id, status, requester_id, receiver_id, created_at,
+                requester:profiles!connections_requester_id_fkey(id, username, full_name, college_name),
+                receiver:profiles!connections_receiver_id_fkey(id, username, full_name, college_name)
+              `)
+              .eq('id', newConn.id)
+              .single();
+              
+            if (data) {
+                setConnections(prev => {
+                   if (prev.find(c => c.id === data.id)) return prev;
+                   return [data, ...prev];
+                });
+            }
+         }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'connections' }, (payload) => {
+         const updatedConn = payload.new;
+         if (updatedConn.requester_id === profile.id || updatedConn.receiver_id === profile.id) {
+             setConnections(prev => prev.map(c => c.id === updatedConn.id ? { ...c, status: updatedConn.status } : c));
+         }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'connections' }, (payload) => {
+         const deletedConn = payload.old;
+         setConnections(prev => prev.filter(c => c.id !== deletedConn.id));
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(room);
-      supabase.removeChannel(msgSub);
+      supabase.removeChannel(realtimeSub);
     };
-  }, [profile?.id, selectedChat, connections]);
+  }, [profile?.id]);
 
   // Fetch messages for selected chat
   useEffect(() => {
