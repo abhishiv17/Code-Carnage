@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { ROUTES } from '@/lib/constants';
 import { ArrowRight } from 'lucide-react';
+import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
 
 const skills = ['Python', 'Guitar', 'UI/UX', '日本語', 'Photography', 'Yoga', 'React', 'Piano'];
 
 export function Hero() {
   const [scrollY, setScrollY] = useState(0);
+  const [userCount, setUserCount] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +20,13 @@ export function Hero() {
     
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => setUserCount(data.users))
+      .catch(() => setUserCount(47)); // fallback
   }, []);
 
   return (
@@ -36,7 +45,7 @@ export function Hero() {
         {/* Social proof — minimal, no card */}
         <p className="text-[13px] font-medium text-[var(--text-muted)] tracking-widest uppercase mb-10">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-matcha mr-2 align-middle" />
-          2,847 students swapping skills
+          <AnimatedCounter target={userCount} /> students swapping skills
         </p>
 
         {/* Hero heading — big, warm */}
