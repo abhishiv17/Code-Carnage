@@ -295,14 +295,24 @@ export default function SessionsPage() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/dashboard/sessions/${session.id}`}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-accent-violet hover:bg-accent-violet/90 text-white font-bold rounded-xl shadow-lg transition-all"
-                    >
-                      <PhoneCall size={16} />
-                      Join Video Call
-                      <ArrowRight size={14} />
-                    </Link>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Link
+                        href={`/dashboard/sessions/${session.id}`}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-accent-violet hover:bg-accent-violet/90 text-white font-bold rounded-xl shadow-lg transition-all"
+                      >
+                        <PhoneCall size={16} />
+                        Join Video Call
+                        <ArrowRight size={14} />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateStatus(session.id, 'cancelled', peerId)}
+                        className="flex items-center justify-center gap-1.5 px-4 py-3 bg-[var(--bg-surface-solid)] hover:bg-accent-coral/10 text-[var(--text-muted)] hover:text-accent-coral border border-[var(--glass-border)] text-xs font-bold rounded-xl transition-all"
+                        title="Cancel this session"
+                      >
+                        <X size={14} /> Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
