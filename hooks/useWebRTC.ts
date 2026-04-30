@@ -186,7 +186,6 @@ export function useWebRTC({
 
       pc.onconnectionstatechange = () => {
         if (isMounted) setConnectionState(pc.connectionState);
-        // Attempt reconnection on failure
         if (pc.connectionState === 'failed') {
           console.warn('[useWebRTC] Connection failed, restarting ICE…');
           pc.restartIce();
@@ -197,8 +196,22 @@ export function useWebRTC({
       };
 
       pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'disconnected') {
-          console.warn('[useWebRTC] ICE disconnected, will try reconnecting…');
+        const state = pc.iceConnectionState;
+        console.log('[useWebRTC] ICE connection state:', state);
+        if (state === 'disconnected') {
+          console.warn('[useWebRTC] ICE disconnected, waiting for recovery…');
+          // Give ICE 5s to recover before forcing restart
+          setTimeout(() => {
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+              console.warn('[useWebRTC] ICE still down after 5s, restarting…');
+              pc.restartIce();
+              if (isCaller) createAndSendOffer(pc);
+            }
+          }, 5000);
+        }
+        if (state === 'failed') {
+          pc.restartIce();
+          if (isCaller) createAndSendOffer(pc);
         }
       };
 
@@ -250,9 +263,11 @@ export function useWebRTC({
               }
 
               if (offerCollision && isPolite) {
-                await Promise.all([
-                  pc.setLocalDescription({ type: 'rollback' }),
-                ]);
+                try {
+                  await pc.setLocalDescription({ type: 'rollback' });
+                } catch (rollbackErr) {
+                  console.warn('[useWebRTC] rollback failed (may be fine):', rollbackErr);
+                }
               }
 
               await pc.setRemoteDescription(
@@ -260,7 +275,11 @@ export function useWebRTC({
               );
               // flush pending candidates
               for (const c of pendingCandidates) {
-                await pc.addIceCandidate(new RTCIceCandidate(c));
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(c));
+                } catch (e) {
+                  console.warn('[useWebRTC] failed to add buffered candidate:', e);
+                }
               }
               pendingCandidates.length = 0;
 
@@ -276,19 +295,27 @@ export function useWebRTC({
                 );
                 // flush pending candidates
                 for (const c of pendingCandidates) {
-                  await pc.addIceCandidate(new RTCIceCandidate(c));
+                  try {
+                    await pc.addIceCandidate(new RTCIceCandidate(c));
+                  } catch (e) {
+                    console.warn('[useWebRTC] failed to add buffered candidate:', e);
+                  }
                 }
                 pendingCandidates.length = 0;
               }
             }
 
             if (msg.type === 'ice-candidate' && msg.data) {
-              if (pc.remoteDescription) {
-                await pc.addIceCandidate(
-                  new RTCIceCandidate(msg.data as RTCIceCandidateInit),
-                );
-              } else {
-                pendingCandidates.push(msg.data as RTCIceCandidateInit);
+              try {
+                if (pc.remoteDescription) {
+                  await pc.addIceCandidate(
+                    new RTCIceCandidate(msg.data as RTCIceCandidateInit),
+                  );
+                } else {
+                  pendingCandidates.push(msg.data as RTCIceCandidateInit);
+                }
+              } catch (e) {
+                console.warn('[useWebRTC] addIceCandidate error (non-fatal):', e);
               }
             }
 
@@ -308,11 +335,20 @@ export function useWebRTC({
             // If caller, wait a beat then send offer
             // (peer may already be subscribed)
             if (isCaller) {
+              // Send initial offer after 1s
               setTimeout(async () => {
                 if (pc.signalingState === 'stable' && !pc.remoteDescription) {
                   await createAndSendOffer(pc);
                 }
               }, 1000);
+              // Retry after 5s if still not connected (handles late-joiner races)
+              setTimeout(async () => {
+                if (pc.iceConnectionState === 'new' || pc.iceConnectionState === 'checking') {
+                  console.warn('[useWebRTC] Still not connected after 5s, re-sending offer…');
+                  peerReadyRef.current = true;
+                  await createAndSendOffer(pc);
+                }
+              }, 5000);
             }
           }
         });
