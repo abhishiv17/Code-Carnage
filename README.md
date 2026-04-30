@@ -4,7 +4,9 @@
 >
 > **Our Solution:** A Peer-to-Peer Skill Barter Platform. Students list skills they have and want to learn. Our Groq AI engine matches compatible pairs. Sessions are conducted via in-app WebRTC video calls, fueled by a skill credit economy where teaching earns credits and learning spends them. Quality is maintained through a peer rating system and verified badges.
 
-[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://vercel.com)
+**🌐 Live Demo:** [https://code-carnage.vercel.app/](https://code-carnage.vercel.app/)
+
+[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://code-carnage.vercel.app/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase-3FCF8E?logo=supabase)](https://supabase.com)
 [![Groq](https://img.shields.io/badge/AI-Groq%20%7C%20LLaMA3.1-F55036)](https://groq.com)
