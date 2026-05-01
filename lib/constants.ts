@@ -15,6 +15,7 @@ export const ROUTES = {
   calendar: '/dashboard/calendar',
   feed: '/dashboard/feed',
   skills: '/dashboard/skills',
+  forum: '/dashboard/forum',
 } as const;
 
 export const SKILL_CATEGORIES = [
