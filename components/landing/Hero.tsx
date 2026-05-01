@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { ROUTES } from '@/lib/constants';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
 
 const skills = ['Python', 'Guitar', 'UI/UX', '日本語', 'Photography', 'Yoga', 'React', 'Piano'];
@@ -42,6 +42,12 @@ export function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+        {/* Version 2.0 Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-violet/10 border border-accent-violet/20 text-accent-violet text-[11px] font-bold uppercase tracking-wider mb-8 animate-fade-in">
+          <Sparkles size={12} />
+          Version 2.0 Now Live
+        </div>
+
         {/* Social proof — minimal, no card */}
         <p className="text-[13px] font-medium text-[var(--text-muted)] tracking-widest uppercase mb-10">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-matcha mr-2 align-middle" />
@@ -57,8 +63,8 @@ export function Hero() {
 
         {/* Subheading */}
         <p className="stagger-in max-w-lg mx-auto text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed mb-12">
-          You know Python. They know guitar. Teach what you have,
-          learn what you want — powered by Smart Matchmaking, a Multi-Lingual AI Tutor, and Secure Messaging.
+          Master any skill through peer exchange. Powered by Llama 3.1 AI, 
+          a thriving Community Forum, and a gamified Milestone system.
         </p>
 
         {/* CTAs */}

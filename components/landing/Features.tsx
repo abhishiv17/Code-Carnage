@@ -1,26 +1,33 @@
-import { Zap, Users, Video, ShieldCheck, Star, Coins } from 'lucide-react';
+import { Zap, Users, Video, ShieldCheck, Star, Coins, Award, MessageCircle, Library, Sparkles } from 'lucide-react';
 
 const features = [
   {
-    icon: Zap,
-    title: 'Smart AI Matchmaking',
-    description: 'Our AI engine instantly pairs you with the perfect skill-swap partner based on complementary skills, colleges, and schedules.',
+    icon: Sparkles,
+    title: 'AI Skill Recommendations',
+    description: 'Our Llama 3.1 powered AI analyzes your profile to suggest the perfect skills to learn next, creating personalized learning paths.',
     color: 'text-accent-matcha',
     dotColor: 'bg-accent-matcha',
   },
   {
-    icon: Users,
-    title: 'Social Hub & Messaging',
-    description: 'Send follow requests, connect with peers, and securely chat with voice notes, PDFs, and images right in your dashboard.',
+    icon: Award,
+    title: 'Badges & Milestones',
+    description: 'Gamify your journey. Earn unique badges for teaching, learning, and hitting milestones. Showcase your expertise to the community.',
+    color: 'text-accent-amber',
+    dotColor: 'bg-accent-amber',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Community Forum',
+    description: 'Discuss topics, ask for help, and share solutions. A dedicated space for academic and skill-based collaborative learning.',
     color: 'text-accent-violet',
     dotColor: 'bg-accent-violet',
   },
   {
-    icon: Star,
-    title: 'Multi-Lingual AI Tutor',
-    description: 'Ask the SkillSwap AI for help in your native regional language. Upload documents or images and let it guide your learning.',
-    color: 'text-accent-amber',
-    dotColor: 'bg-accent-amber',
+    icon: Library,
+    title: 'Resource Library',
+    description: 'Share and discover videos, articles, and e-books. A crowdsourced repository of knowledge curated by students.',
+    color: 'text-accent-emerald',
+    dotColor: 'bg-accent-emerald',
   },
   {
     icon: Video,
@@ -32,16 +39,9 @@ const features = [
   {
     icon: Coins,
     title: 'Skill Credit Economy',
-    description: 'Earn credits by teaching what you know, then spend them to learn what you want. A truly balanced ecosystem.',
-    color: 'text-accent-mustard',
-    dotColor: 'bg-accent-mustard',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Secure Campus Connections',
-    description: 'Gatekeep your messages with the Follow Request system. Verified profiles keep the community safe and focused.',
-    color: 'text-accent-rose',
-    dotColor: 'bg-accent-rose',
+    description: 'Earn credits by teaching what you know, then spend them to learn what you want. A truly balanced student ecosystem.',
+    color: 'text-accent-matcha',
+    dotColor: 'bg-accent-matcha',
   },
 ];
 

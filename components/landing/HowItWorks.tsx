@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { AnimatedCounter } from '@/components/shared/AnimatedCounter';
-import { UserPlus, Sparkles, Video, Star, Users } from 'lucide-react';
+import { UserPlus, Sparkles, Video, Star, Users, Award, MessageCircle } from 'lucide-react';
 
 const steps = [
-  { number: '01', icon: UserPlus, title: 'Create Your Profile', description: 'Sign up and list the skills you have and the skills you want to learn.', color: 'text-accent-matcha', bg: 'bg-section-sage' },
-  { number: '02', icon: Sparkles, title: 'Get AI Matches & Prep', description: 'Our engine finds compatible students. Need extra prep? Ask the integrated AI tutor for help.', color: 'text-accent-slate', bg: 'bg-section-surface' },
-  { number: '03', icon: Users, title: 'Connect & Chat', description: 'Send a follow request. Once accepted, securely chat, share voice notes, and swap files.', color: 'text-accent-violet', bg: 'bg-section-sand' },
-  { number: '04', icon: Video, title: 'Jump Into a Session', description: 'Schedule a live video call. Teach one hour, learn one hour. Credits flow automatically.', color: 'text-accent-rose', bg: 'bg-section-rose' },
+  { number: '01', icon: UserPlus, title: 'Build Your Profile', description: 'List your skills and background. Our Llama 3.1 AI will suggest what you should learn next.', color: 'text-accent-matcha', bg: 'bg-section-sage' },
+  { number: '02', icon: Users, title: 'Connect & Engage', description: 'Join the Community Forum to discuss topics or find matches directly in the Marketplace.', color: 'text-accent-violet', bg: 'bg-section-sand' },
+  { number: '03', icon: Video, title: 'Learn & Teach', description: 'Jump into integrated video sessions. Share resources, earn credits, and master new skills.', color: 'text-accent-rose', bg: 'bg-section-rose' },
+  { number: '04', icon: Award, title: 'Unlock Badges', description: 'Climb the leaderboard, unlock unique badges, and celebrate your growth milestones.', color: 'text-accent-amber', bg: 'bg-section-surface' },
 ];
 
 export function HowItWorks() {
