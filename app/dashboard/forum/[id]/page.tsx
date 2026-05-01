@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { GlassCard } from '@/components/shared/GlassCard';
-import { ArrowLeft, MessageSquare, Eye, ArrowUpCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Eye, ArrowUpCircle, CheckCircle2, Loader2, Edit2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useUser } from '@/hooks/useUser';
@@ -140,6 +140,41 @@ export default function ForumPostDetailsPage() {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (!user || user.id !== post?.author_id) return;
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('forum_posts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Post deleted successfully');
+      router.push('/dashboard/forum');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete post');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('forum_comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+      refetchComments();
+      toast.success('Comment deleted');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete comment');
+    }
+  };
+
   if (postLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -207,9 +242,30 @@ export default function ForumPostDetailsPage() {
               ))}
             </div>
 
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-4">
-              {post.title}
-            </h1>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
+                {post.title}
+              </h1>
+
+              {user?.id === post.author_id && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link 
+                    href={`/dashboard/forum/edit/${id}`}
+                    className="p-2 rounded-lg bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-muted)] hover:text-accent-violet hover:border-accent-violet/30 transition-all"
+                    title="Edit Post"
+                  >
+                    <Edit2 size={18} />
+                  </Link>
+                  <button 
+                    onClick={handleDeletePost}
+                    className="p-2 rounded-lg bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-muted)] hover:text-accent-coral hover:border-accent-coral/30 transition-all"
+                    title="Delete Post"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-2 mb-6">
               <div className="w-8 h-8 rounded-full overflow-hidden bg-[var(--bg-surface-solid)] shrink-0">
@@ -315,20 +371,31 @@ export default function ForumPostDetailsPage() {
                       </div>
 
                       {/* Author tools */}
-                      {user?.id === post.author_id && (
-                        <button
-                          onClick={() => handleMarkSolution(comment.id, comment.is_solution)}
-                          className={cn(
-                            "text-xs font-semibold px-2 py-1 rounded transition-colors flex items-center gap-1",
-                            comment.is_solution 
-                              ? "text-accent-emerald hover:bg-accent-emerald/10" 
-                              : "text-[var(--text-muted)] hover:text-accent-emerald hover:bg-accent-emerald/10"
-                          )}
-                        >
-                          <CheckCircle2 size={14} />
-                          {comment.is_solution ? 'Unmark' : 'Mark as Solution'}
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {user?.id === post.author_id && (
+                          <button
+                            onClick={() => handleMarkSolution(comment.id, comment.is_solution)}
+                            className={cn(
+                              "text-xs font-semibold px-2 py-1 rounded transition-colors flex items-center gap-1",
+                              comment.is_solution 
+                                ? "text-accent-emerald hover:bg-accent-emerald/10" 
+                                : "text-[var(--text-muted)] hover:text-accent-emerald hover:bg-accent-emerald/10"
+                            )}
+                          >
+                            <CheckCircle2 size={14} />
+                            {comment.is_solution ? 'Unmark' : 'Mark as Solution'}
+                          </button>
+                        )}
+                        {user?.id === comment.author_id && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-accent-coral hover:bg-accent-coral/10 transition-colors"
+                            title="Delete Comment"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">
