@@ -3,6 +3,7 @@ import { Sora, DM_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { UserProvider } from '@/hooks/useUser';
+import { AuthRedirect } from '@/components/providers/AuthRedirect';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               enableSystem={true}
             >
               {children}
+              <AuthRedirect />
               <Toaster
                 position="top-center"
                 toastOptions={{

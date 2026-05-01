@@ -174,10 +174,22 @@ export default function ProfilePage() {
   const handleAddSkill = async (skillName: string, type: 'offered' | 'desired') => {
     if (!skillName.trim() || !profile) return;
     
-    // Check if they already have it
+    // Check if they already have it in the same category
     const alreadyHas = skills.some((s) => s.skill_name.toLowerCase() === skillName.toLowerCase() && s.type === type);
     if (alreadyHas) {
       toast.error('Skill already added!');
+      return;
+    }
+
+    // Prevent adding a skill that's already in the opposite category
+    const oppositeType = type === 'offered' ? 'desired' : 'offered';
+    const inOpposite = skills.some((s) => s.skill_name.toLowerCase() === skillName.toLowerCase() && s.type === oppositeType);
+    if (inOpposite) {
+      toast.error(
+        type === 'offered'
+          ? `"${skillName.trim()}" is already in your "Want to Learn" list — you can\'t teach and learn the same skill!`
+          : `"${skillName.trim()}" is already in your "Teach" list — you can\'t learn and teach the same skill!`
+      );
       return;
     }
 
@@ -435,9 +447,11 @@ export default function ProfilePage() {
                 className="w-full pl-3 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-dashed border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-emerald/50 focus:border-solid transition-all"
               />
               <datalist id="all-skills-offered">
-                {ALL_SKILLS.map((skill) => (
-                  <option key={skill.id} value={skill.name} />
-                ))}
+                {ALL_SKILLS
+                  .filter((skill) => !desiredSkills.some((s) => s.skill_name.toLowerCase() === skill.name.toLowerCase()))
+                  .map((skill) => (
+                    <option key={skill.id} value={skill.name} />
+                  ))}
               </datalist>
             </div>
             <button
@@ -494,9 +508,11 @@ export default function ProfilePage() {
                 className="w-full pl-3 pr-4 py-2.5 rounded-xl bg-[var(--bg-surface-solid)] border border-dashed border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:border-solid transition-all"
               />
               <datalist id="all-skills-desired">
-                {ALL_SKILLS.map((skill) => (
-                  <option key={skill.id} value={skill.name} />
-                ))}
+                {ALL_SKILLS
+                  .filter((skill) => !offeredSkills.some((s) => s.skill_name.toLowerCase() === skill.name.toLowerCase()))
+                  .map((skill) => (
+                    <option key={skill.id} value={skill.name} />
+                  ))}
               </datalist>
             </div>
             <button
