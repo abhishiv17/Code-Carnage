@@ -147,7 +147,7 @@ export default function DashboardPage() {
             if (filteredListings.length === 0) {
               return (
                 <p className="text-center py-12 text-[var(--text-muted)]">
-                  No listings found matching "{searchQuery}".
+                  No listings found matching &quot;{searchQuery}&quot;.
                 </p>
               );
             }
