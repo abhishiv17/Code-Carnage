@@ -20,12 +20,14 @@ import {
   FileQuestion,
   Menu,
   X,
+  BookOpen,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
   { label: 'Marketplace', href: ROUTES.dashboard, icon: LayoutDashboard },
   { label: 'Campus Feed', href: '/dashboard/feed', icon: FileQuestion },
+  { label: 'Skill Library', href: ROUTES.skills, icon: BookOpen },
   { label: 'Matches', href: ROUTES.matches, icon: Sparkles },
   { label: 'Sessions', href: ROUTES.sessions, icon: CalendarDays },
   { label: 'Messages', href: ROUTES.messages, icon: MessageSquare },

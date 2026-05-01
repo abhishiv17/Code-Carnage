@@ -14,6 +14,7 @@ export const ROUTES = {
   messages: '/dashboard/messages',
   calendar: '/dashboard/calendar',
   feed: '/dashboard/feed',
+  skills: '/dashboard/skills',
 } as const;
 
 export const SKILL_CATEGORIES = [

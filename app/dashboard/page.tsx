@@ -7,11 +7,14 @@ import { StatsOverview } from '@/components/dashboard/StatsOverview';
 import { SkillCard } from '@/components/dashboard/SkillCard';
 import type { MarketplaceListing } from '@/lib/mock-data';
 import { Loader2, Search } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user } = useUser();
+  const searchParams = useSearchParams();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -163,5 +166,13 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-accent-violet" /></div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
