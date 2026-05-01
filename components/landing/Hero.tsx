@@ -42,11 +42,7 @@ export function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
-        {/* Version 2.0 Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-violet/10 border border-accent-violet/20 text-accent-violet text-[11px] font-bold uppercase tracking-wider mb-8 animate-fade-in">
-          <Sparkles size={12} />
-          Version 2.0 Now Live
-        </div>
+
 
         {/* Social proof — minimal, no card */}
         <p className="text-[13px] font-medium text-[var(--text-muted)] tracking-widest uppercase mb-10">
