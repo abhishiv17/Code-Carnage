@@ -3,7 +3,7 @@
 -- ==========================================
 
 -- 1. Forum Posts Table
-CREATE TABLE public.forum_posts (
+CREATE TABLE IF NOT EXISTS public.forum_posts (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   author_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   title text NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE public.forum_posts (
 );
 
 -- 2. Forum Comments Table
-CREATE TABLE public.forum_comments (
+CREATE TABLE IF NOT EXISTS public.forum_comments (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   post_id uuid REFERENCES public.forum_posts(id) ON DELETE CASCADE NOT NULL,
   author_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE public.forum_comments (
 );
 
 -- 3. Forum Upvotes (Junction table to prevent duplicate upvotes)
-CREATE TABLE public.forum_upvotes (
+CREATE TABLE IF NOT EXISTS public.forum_upvotes (
   post_id uuid REFERENCES public.forum_posts(id) ON DELETE CASCADE NOT NULL,
   user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   created_at timestamptz DEFAULT now() NOT NULL,
@@ -84,18 +84,27 @@ ALTER TABLE public.forum_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.forum_upvotes ENABLE ROW LEVEL SECURITY;
 
 -- Posts
+DROP POLICY IF EXISTS "Forum posts are viewable by everyone." ON public.forum_posts;
 CREATE POLICY "Forum posts are viewable by everyone." ON public.forum_posts FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can create forum posts." ON public.forum_posts;
 CREATE POLICY "Users can create forum posts." ON public.forum_posts FOR INSERT WITH CHECK (auth.uid() = author_id);
+DROP POLICY IF EXISTS "Authors can update their own posts." ON public.forum_posts;
 CREATE POLICY "Authors can update their own posts." ON public.forum_posts FOR UPDATE USING (auth.uid() = author_id);
+DROP POLICY IF EXISTS "Authors can delete their own posts." ON public.forum_posts;
 CREATE POLICY "Authors can delete their own posts." ON public.forum_posts FOR DELETE USING (auth.uid() = author_id);
 
 -- Comments
+DROP POLICY IF EXISTS "Forum comments are viewable by everyone." ON public.forum_comments;
 CREATE POLICY "Forum comments are viewable by everyone." ON public.forum_comments FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can create comments." ON public.forum_comments;
 CREATE POLICY "Users can create comments." ON public.forum_comments FOR INSERT WITH CHECK (auth.uid() = author_id);
+DROP POLICY IF EXISTS "Authors can update their own comments." ON public.forum_comments;
 CREATE POLICY "Authors can update their own comments." ON public.forum_comments FOR UPDATE USING (auth.uid() = author_id);
+DROP POLICY IF EXISTS "Authors can delete their own comments." ON public.forum_comments;
 CREATE POLICY "Authors can delete their own comments." ON public.forum_comments FOR DELETE USING (auth.uid() = author_id);
 
 -- Upvotes (Selectable by everyone, insert/delete handled by stored procedure above)
+DROP POLICY IF EXISTS "Upvotes are viewable by everyone." ON public.forum_upvotes;
 CREATE POLICY "Upvotes are viewable by everyone." ON public.forum_upvotes FOR SELECT USING (true);
 
 -- Mock Data for Forum
@@ -107,8 +116,8 @@ DECLARE
   v_post_2 uuid;
 BEGIN
   -- Get two distinct users if they exist
-  SELECT id INTO v_user_1 FROM auth.users ORDER BY created_at LIMIT 1;
-  SELECT id INTO v_user_2 FROM auth.users WHERE id != v_user_1 ORDER BY created_at LIMIT 1;
+  SELECT id INTO v_user_1 FROM public.profiles ORDER BY created_at LIMIT 1;
+  SELECT id INTO v_user_2 FROM public.profiles WHERE id != v_user_1 ORDER BY created_at LIMIT 1;
 
   IF v_user_1 IS NOT NULL THEN
     -- Insert a post
