@@ -26,7 +26,11 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#bdf2b5',
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8f6f0' },
+    { media: '(prefers-color-scheme: dark)', color: '#121413' },
+  ],
 };
 
 export const metadata: Metadata = {
@@ -35,6 +39,17 @@ export const metadata: Metadata = {
     'Exchange skills with fellow students. Teach what you know, learn what you want. No money needed — just skill credits.',
   keywords: ['skill exchange', 'peer learning', 'college', 'barter', 'skill credits'],
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'SkillSwap',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -35,9 +35,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <Sidebar />
-      <div className="ml-[240px] transition-all duration-300">
+      {/* Main content: pushed right on desktop (lg+), full width on mobile */}
+      <div className="lg:ml-[240px] transition-all duration-300">
         <TopBar />
-        <main className="p-6 animate-page-in">
+        <main className="p-4 sm:p-6 pb-24 lg:pb-6 animate-page-in">
           {children}
         </main>
       </div>

@@ -375,9 +375,9 @@ export default function MessagesPage() {
         <p className="text-sm text-[var(--text-muted)]">Connect and share resources with your peers</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[650px]">
-        {/* Left Sidebar: Chat List */}
-        <GlassCard padding="none" className="md:col-span-1 flex flex-col overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 h-[calc(100dvh-200px)] sm:h-[650px]">
+        {/* Left Sidebar: Chat List — hidden on mobile when a chat is selected */}
+        <GlassCard padding="none" className={cn('md:col-span-1 flex flex-col overflow-hidden', selectedChat ? 'hidden md:flex' : 'flex')}>
           <div className="p-4 border-b border-[var(--glass-border)] bg-[var(--bg-surface-solid)]">
             <div className="flex bg-[var(--glass-bg)] p-1 rounded-xl border border-[var(--glass-border)]">
               <button 
@@ -457,13 +457,21 @@ export default function MessagesPage() {
           </div>
         </GlassCard>
 
-        {/* Chat Area */}
-        <GlassCard padding="none" className="md:col-span-2 flex flex-col overflow-hidden bg-[var(--bg-surface)] relative">
+        {/* Chat Area — hidden on mobile when no chat is selected */}
+        <GlassCard padding="none" className={cn('md:col-span-2 flex flex-col overflow-hidden bg-[var(--bg-surface)] relative', !selectedChat ? 'hidden md:flex' : 'flex')}>
           {activeTab === 'messages' && selectedChat ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-[var(--glass-border)] bg-[var(--bg-surface-solid)] flex items-center justify-between">
+              <div className="p-3 sm:p-4 border-b border-[var(--glass-border)] bg-[var(--bg-surface-solid)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
+                  {/* Back button — mobile only */}
+                  <button
+                    onClick={() => setSelectedChat(null)}
+                    className="md:hidden p-1.5 -ml-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-colors"
+                    aria-label="Back to chat list"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
                   {(() => {
                     const chat = activeChats.find(c => c.id === selectedChat);
                     const otherUser = chat?.requester_id === profile?.id ? chat?.receiver : chat?.requester;

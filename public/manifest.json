@@ -1,12 +1,16 @@
 {
-  "name": "SkillSwap - Code Carnage",
+  "name": "SkillSwap - Peer-to-Peer Skill Exchange",
   "short_name": "SkillSwap",
   "description": "Swap skills, not cash. The peer-to-peer learning platform built for college students.",
+  "id": "/dashboard",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0d1117",
-  "theme_color": "#bdf2b5",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#121413",
+  "theme_color": "#121413",
   "orientation": "portrait-primary",
+  "categories": ["education", "social"],
   "icons": [
     {
       "src": "/favicon.ico",
@@ -16,12 +20,28 @@
     {
       "src": "/icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
 }

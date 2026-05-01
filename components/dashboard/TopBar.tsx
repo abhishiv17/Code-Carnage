@@ -91,14 +91,17 @@ export function TopBar() {
   const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${profile?.username || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
   return (
-    <header className="sticky top-0 z-30 glass border-b border-[var(--glass-border)] px-6 py-3">
-      <div className="flex items-center justify-between gap-4">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md" ref={searchRef}>
+    <header className="sticky top-0 z-30 glass border-b border-[var(--glass-border)] px-3 sm:px-6 py-3">
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
+        {/* Spacer for hamburger on mobile */}
+        <div className="w-10 lg:hidden shrink-0" />
+
+        {/* Search — hidden on very small screens, shows as icon on sm */}
+        <div className="relative flex-1 max-w-md hidden sm:block" ref={searchRef}>
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Search students by name or username..."
+            placeholder="Search students..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => { if(searchQuery.length > 1) setShowSearchDropdown(true) }}
@@ -138,15 +141,17 @@ export function TopBar() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-3">
-          {/* Language Selector */}
-          <LanguageSelector />
+        <div className="flex items-center gap-1.5 sm:gap-3 ml-auto">
+          {/* Language Selector — hidden on mobile */}
+          <div className="hidden md:block">
+            <LanguageSelector />
+          </div>
           
           {/* Theme toggle */}
           <ThemeToggle />
 
           {/* Credits */}
-          <Link href={ROUTES.dashboard} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent-amber/10 border border-accent-amber/20 hover:bg-accent-amber/20 transition-all">
+          <Link href={ROUTES.dashboard} className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-xl bg-accent-amber/10 border border-accent-amber/20 hover:bg-accent-amber/20 transition-all">
             <Coins size={16} className="text-accent-amber" />
             <span className="text-sm font-heading font-semibold text-accent-amber">
               {profile?.credits ?? 0}
@@ -169,7 +174,7 @@ export function TopBar() {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 glass bg-[var(--bg-surface)] border border-[var(--glass-border)] rounded-xl shadow-2xl overflow-hidden z-50">
+              <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-80 glass bg-[var(--bg-surface)] border border-[var(--glass-border)] rounded-xl shadow-2xl overflow-hidden z-50">
                 {/* Header */}
                 <div className="px-4 py-3 border-b border-[var(--glass-border)] flex justify-between items-center">
                   <div className="flex items-center gap-2">
@@ -259,8 +264,8 @@ export function TopBar() {
             )}
           </div>
 
-          {/* User avatar */}
-          <Link href={ROUTES.profile} className="block w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity">
+          {/* User avatar — hidden on mobile (accessible via bottom nav Profile) */}
+          <Link href={ROUTES.profile} className="hidden sm:block w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity">
             <Image
               src={avatarUrl}
               alt={profile?.username || 'User'}
