@@ -141,18 +141,30 @@ BEGIN
         'I highly recommend checking out "FrontendExpert" or reading through the React docs thoroughly. Make sure you understand hooks deeply (useEffect closures, useMemo, etc).',
         true
       );
-    END IF;
 
-    -- Insert another post
-    INSERT INTO public.forum_posts (author_id, title, content, category, tags, upvotes, view_count)
-    VALUES (
-      v_user_2, 
-      'Need help debugging a strange memory leak in Node.js', 
-      'My express application crashes every 24 hours with a JavaScript heap out of memory error. I am suspecting my WebSocket connections aren''t closing properly. How do you guys profile Node apps in production?',
-      'help',
-      ARRAY['nodejs', 'debugging', 'backend'],
-      12,
-      345
-    ) RETURNING id INTO v_post_2;
+      -- Insert another post if user 2 exists
+      INSERT INTO public.forum_posts (author_id, title, content, category, tags, upvotes, view_count)
+      VALUES (
+        v_user_2, 
+        'Need help debugging a strange memory leak in Node.js', 
+        'My express application crashes every 24 hours with a JavaScript heap out of memory error. I am suspecting my WebSocket connections aren''t closing properly. How do you guys profile Node apps in production?',
+        'help',
+        ARRAY['nodejs', 'debugging', 'backend'],
+        12,
+        345
+      ) RETURNING id INTO v_post_2;
+    ELSE
+      -- If only one user exists, just add another post by that user
+      INSERT INTO public.forum_posts (author_id, title, content, category, tags, upvotes, view_count)
+      VALUES (
+        v_user_1, 
+        'Need help debugging a strange memory leak in Node.js', 
+        'My express application crashes every 24 hours with a JavaScript heap out of memory error. I am suspecting my WebSocket connections aren''t closing properly. How do you guys profile Node apps in production?',
+        'help',
+        ARRAY['nodejs', 'debugging', 'backend'],
+        12,
+        345
+      ) RETURNING id INTO v_post_2;
+    END IF;
   END IF;
 END $$;
