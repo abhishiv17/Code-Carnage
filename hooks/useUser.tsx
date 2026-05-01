@@ -25,6 +25,7 @@ export interface UserProfile {
   profile_completed: boolean;
   credits: number;
   average_rating: number;
+  total_sessions: number;
   created_at: string;
 }
 
