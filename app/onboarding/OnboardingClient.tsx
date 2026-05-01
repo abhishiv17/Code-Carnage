@@ -454,16 +454,21 @@ export default function OnboardingPage() {
         <div className="flex items-center justify-between mt-6">
           <button
             onClick={() => {
-              if (step === 'want') setStep('have');
+              if (step === 'have') {
+                // Go back to dashboard or previous page
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push(ROUTES.dashboard);
+                }
+              }
+              else if (step === 'want') setStep('have');
               else if (step === 'confirm') setStep('want');
               else if (step === 'profile') setStep('confirm');
             }}
-            className={cn(
-              'flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors',
-              step === 'have' && 'invisible'
-            )}
+            className="flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> {step === 'have' ? 'Exit' : 'Back'}
           </button>
 
           <div className="flex items-center gap-3">
