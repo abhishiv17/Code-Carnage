@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ALL_SKILLS } from '@/lib/constants';
 import { authFetch } from '@/lib/authFetch';
+import { BadgesSection } from '@/components/dashboard/BadgesSection';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 const DEGREE_OPTIONS = ['B.Tech', 'B.E.', 'B.Sc', 'BBA', 'BCA', 'B.Com', 'BA', 'M.Tech', 'M.Sc', 'MBA', 'MCA', 'PhD', 'Other'];
@@ -287,6 +288,9 @@ export default function ProfilePage() {
           </div>
         </div>
       </GlassCard>
+
+      {/* Badges & Milestones */}
+      <BadgesSection />
 
       {/* Personal Info */}
       <GlassCard padding="lg">
