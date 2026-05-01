@@ -22,6 +22,7 @@ import {
   X,
   BookOpen,
   MessageCircle,
+  Library,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -29,6 +30,7 @@ const navItems = [
   { label: 'Marketplace', href: ROUTES.dashboard, icon: LayoutDashboard },
   { label: 'Campus Feed', href: '/dashboard/feed', icon: FileQuestion },
   { label: 'Community Forum', href: ROUTES.forum, icon: MessageCircle },
+  { label: 'Resource Library', href: ROUTES.resources, icon: Library },
   { label: 'Skill Library', href: ROUTES.skills, icon: BookOpen },
   { label: 'Matches', href: ROUTES.matches, icon: Sparkles },
   { label: 'Sessions', href: ROUTES.sessions, icon: CalendarDays },

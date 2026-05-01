@@ -16,6 +16,7 @@ export const ROUTES = {
   feed: '/dashboard/feed',
   skills: '/dashboard/skills',
   forum: '/dashboard/forum',
+  resources: '/dashboard/resources',
 } as const;
 
 export const SKILL_CATEGORIES = [
