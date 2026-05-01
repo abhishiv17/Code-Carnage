@@ -2,7 +2,6 @@
 -- The original schema only has: auth.uid() = learner_id
 -- This adds: OR auth.uid() = teacher_id
 ALTER POLICY "Learners can insert sessions." ON public.sessions
-USING (true)
 WITH CHECK (auth.uid() = learner_id OR auth.uid() = teacher_id);
 
 -- Allow session participants to delete their sessions (for cancellation)

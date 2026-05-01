@@ -69,11 +69,34 @@ export default function LoginPage() {
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast.error(error.message);
+      // "Invalid login credentials" can mean wrong password OR user has no password (signed up via OAuth/magic link)
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error('Invalid credentials. If you signed up with GitHub or Magic Link, use that method to log in.', {
+          duration: 6000,
+        });
+      } else {
+        toast.error(error.message);
+      }
       setLoading(false);
     } else {
       toast.success('Welcome back!');
       window.location.href = ROUTES.dashboard;
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error('Enter your email first, then click "Forgot password?"');
+      return;
+    }
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Password reset link sent! Check your inbox.', { duration: 5000 });
     }
   };
 
@@ -236,6 +259,13 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="mt-1.5 text-xs text-accent-violet hover:underline font-medium"
+                >
+                  Forgot password? / Set a password
+                </button>
               </div>
             )}
 
