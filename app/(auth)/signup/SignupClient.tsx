@@ -8,7 +8,7 @@ import { useUser } from '@/hooks/useUser';
 import { GlassCard } from '@/components/shared/GlassCard';
 import { GradientButton } from '@/components/shared/GradientButton';
 import { APP_NAME, ROUTES } from '@/lib/constants';
-import { Eye, EyeOff, Mail, Lock, User, Loader2, Github } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, Github, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SignupPage() {
@@ -42,8 +42,24 @@ export default function SignupPage() {
       toast.error('Please enter your name');
       return;
     }
-    if (!password || password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    if (!password || password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      toast.error('Password must contain a lowercase letter');
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      toast.error('Password must contain an uppercase letter');
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      toast.error('Password must contain a digit');
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+      toast.error('Password must contain a symbol (e.g. !@#$)');
       return;
     }
 
@@ -172,7 +188,7 @@ export default function SignupPage() {
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Min 8 characters"
+                  placeholder="Min 6 chars · A-z, 0-9, symbol"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-11 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] text-sm focus:outline-none focus:border-accent-violet/50 focus:ring-1 focus:ring-accent-violet/30 transition-all"
@@ -186,6 +202,23 @@ export default function SignupPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {/* Live password requirements */}
+              {password.length > 0 && (
+                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+                  {[
+                    { label: '6+ characters', ok: password.length >= 6 },
+                    { label: 'Lowercase (a-z)', ok: /[a-z]/.test(password) },
+                    { label: 'Uppercase (A-Z)', ok: /[A-Z]/.test(password) },
+                    { label: 'Digit (0-9)', ok: /[0-9]/.test(password) },
+                    { label: 'Symbol (!@#$)', ok: /[^a-zA-Z0-9]/.test(password) },
+                  ].map((rule) => (
+                    <span key={rule.label} className={`flex items-center gap-1 text-[11px] font-medium ${rule.ok ? 'text-accent-emerald' : 'text-[var(--text-muted)]'}`}>
+                      {rule.ok ? <CheckCircle2 size={12} /> : <XCircle size={12} className="opacity-40" />}
+                      {rule.label}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Submit */}
