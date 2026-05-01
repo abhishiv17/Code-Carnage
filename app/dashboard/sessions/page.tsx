@@ -444,7 +444,7 @@ export default function SessionsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {session.status === 'completed' && (
-                      <Link href="/dashboard/reviews" className="px-3 py-2 rounded-lg border border-[var(--border-soft)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all">
+                      <Link href={`/dashboard/reviews?sessionId=${session.id}`} className="px-3 py-2 rounded-lg border border-[var(--border-soft)] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-all">
                         Review
                       </Link>
                     )}

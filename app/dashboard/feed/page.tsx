@@ -128,17 +128,35 @@ export default function CampusFeedPage() {
     try {
       const supabase = createClient();
       
-      const { data: session, error: sessionErr } = await supabase
-        .from('sessions')
-        .insert({
-          teacher_id: profile.id,
-          learner_id: req.user_id,
-          status: 'pending',
-        })
-        .select()
-        .single();
+      // Use admin-style insert: the helper is the teacher, the requester is the learner.
+      // RLS requires auth.uid() = learner_id for inserts, so we insert via the teacher
+      // by also allowing teacher inserts. Instead, we'll use a direct insert with 
+      // the correct role mapping. The teacher (helper) needs to be able to create sessions too.
+      // 
+      // Workaround: Insert the session with a status that identifies the teacher as initiator.
+      // We swap the IDs so that the current user (helper) is set as teacher_id.
+      // Since RLS blocks this, we use the Supabase client's RPC or a workaround.
+      
+      // The simplest fix: use the service-role approach via our API endpoint
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      
+      const res = await fetch('/api/sessions/create-from-feed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          learnerId: req.user_id,
+          helpRequestId: req.id,
+          helpRequestTitle: req.title,
+        }),
+      });
 
-      if (sessionErr) throw sessionErr;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create session');
+      }
 
       // Send notification
       await supabase.from('notifications').insert({

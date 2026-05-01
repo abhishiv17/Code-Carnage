@@ -238,7 +238,7 @@ export default function VideoRoomPage() {
             toast.info('Session ended by your peer.');
             setSessionEnded(true);
             hangUp();
-            setTimeout(() => router.push(ROUTES.reviews), 2000);
+            setTimeout(() => router.push(`${ROUTES.reviews}?sessionId=${sessionId}`), 2000);
           }
         }
       )
@@ -260,7 +260,7 @@ export default function VideoRoomPage() {
     if (connectionState === 'closed' && !sessionEnded && hasConnectedOnceRef.current) {
       toast.info('Session ended by your peer.');
       setSessionEnded(true);
-      setTimeout(() => router.push(ROUTES.reviews), 2000);
+      setTimeout(() => router.push(`${ROUTES.reviews}?sessionId=${sessionId}`), 2000);
     }
   }, [connectionState, sessionEnded, router]);
 
@@ -289,7 +289,7 @@ export default function VideoRoomPage() {
 
       // Navigate to reviews after a brief pause
       setTimeout(() => {
-        router.push(ROUTES.reviews);
+        router.push(`${ROUTES.reviews}?sessionId=${sessionId}`);
       }, 1500);
     } catch (err) {
       toast.error('Something went wrong ending the session');

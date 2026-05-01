@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -29,6 +30,8 @@ interface ProfileMap {
 export default function ReviewsPage() {
   const { user } = useUser();
   const [supabase] = useState(() => createClient());
+  const searchParams = useSearchParams();
+  const preselectedSessionId = searchParams.get('sessionId');
 
   const { data, isLoading: loading } = useQuery({
     queryKey: ['reviews', user?.id],
@@ -84,9 +87,75 @@ export default function ReviewsPage() {
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Unreviewed sessions state
+  const [unreviewedSessions, setUnreviewedSessions] = useState<any[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(preselectedSessionId || '');
+  const [loadingUnreviewed, setLoadingUnreviewed] = useState(true);
+
+  // Fetch completed sessions that haven't been reviewed by this user yet
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnreviewed = async () => {
+      setLoadingUnreviewed(true);
+      // Get all completed sessions this user was part of
+      const { data: completedSessions } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('status', 'completed')
+        .or(`teacher_id.eq.${user.id},learner_id.eq.${user.id}`)
+        .order('ended_at', { ascending: false });
+
+      if (!completedSessions || completedSessions.length === 0) {
+        setUnreviewedSessions([]);
+        setLoadingUnreviewed(false);
+        return;
+      }
+
+      // Get reviews this user already wrote
+      const { data: existingReviews } = await supabase
+        .from('reviews')
+        .select('session_id')
+        .eq('reviewer_id', user.id);
+
+      const reviewedSessionIds = new Set((existingReviews || []).map(r => r.session_id));
+
+      // Filter out already-reviewed sessions
+      const unreviewed = completedSessions.filter(s => !reviewedSessionIds.has(s.id));
+
+      // Fetch peer usernames for display
+      if (unreviewed.length > 0) {
+        const peerIds = Array.from(new Set(
+          unreviewed.map(s => s.teacher_id === user.id ? s.learner_id : s.teacher_id)
+        ));
+        const { data: peerProfiles } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', peerIds);
+
+        const peerMap: Record<string, string> = {};
+        peerProfiles?.forEach(p => { peerMap[p.id] = p.username; });
+
+        const enriched = unreviewed.map(s => ({
+          ...s,
+          peerName: peerMap[s.teacher_id === user.id ? s.learner_id : s.teacher_id] || 'Unknown',
+          role: s.teacher_id === user.id ? 'Taught' : 'Learned from',
+        }));
+        setUnreviewedSessions(enriched);
+      } else {
+        setUnreviewedSessions([]);
+      }
+      setLoadingUnreviewed(false);
+    };
+    fetchUnreviewed();
+  }, [user, supabase, data]); // re-run after reviews data refreshes
+
   const handleSubmitReview = async () => {
     if (newRating === 0) {
       toast.error('Please select a rating');
+      return;
+    }
+    if (!selectedSessionId) {
+      toast.error('Please select a session to review');
       return;
     }
 
@@ -95,7 +164,7 @@ export default function ReviewsPage() {
       const res = await authFetch('/api/reviews', {
         method: 'POST',
         body: JSON.stringify({
-          sessionId: 'placeholder-session-id', // TODO: User needs to select a session
+          sessionId: selectedSessionId,
           rating: newRating,
           feedback: feedback || 'Great session!',
         }),
@@ -105,6 +174,9 @@ export default function ReviewsPage() {
         toast.success('Review submitted!');
         setNewRating(0);
         setFeedback('');
+        setSelectedSessionId('');
+        // Remove the reviewed session from the dropdown
+        setUnreviewedSessions(prev => prev.filter(s => s.id !== selectedSessionId));
       } else {
         const data = await res.json();
         toast.error(data.error || 'Failed to submit review');
@@ -133,22 +205,53 @@ export default function ReviewsPage() {
       {/* Write a review */}
       <GlassCard gradient padding="lg">
         <h2 className="font-heading font-semibold text-lg text-[var(--text-primary)] mb-4">Leave a Review</h2>
-        <div className="flex gap-2 mb-4">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button key={star} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} onClick={() => setNewRating(star)} className="transition-transform hover:scale-110">
-              <Star size={28} className={cn('transition-colors', (hoverRating || newRating) >= star ? 'text-accent-amber fill-accent-amber' : 'text-[var(--text-muted)]')} />
-            </button>
-          ))}
-        </div>
-        <textarea
-          placeholder="Share your experience..."
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-accent-violet/50 resize-none h-24 mb-4"
-        />
-        <GradientButton size="md" onClick={handleSubmitReview} disabled={submitting}>
-          {submitting ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : 'Submit Review'}
-        </GradientButton>
+        
+        {loadingUnreviewed ? (
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+            <Loader2 size={16} className="animate-spin" /> Loading sessions…
+          </div>
+        ) : unreviewedSessions.length === 0 ? (
+          <p className="text-sm text-[var(--text-muted)] py-2">
+            No completed sessions to review. Complete a session first!
+          </p>
+        ) : (
+          <>
+            {/* Session selector */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider">Select Session</label>
+              <select
+                value={selectedSessionId}
+                onChange={(e) => setSelectedSessionId(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-accent-violet/50 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="">Choose a session to review…</option>
+                {unreviewedSessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.role} {s.peerName} — {new Date(s.ended_at || s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Star rating */}
+            <div className="flex gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} onClick={() => setNewRating(star)} className="transition-transform hover:scale-110">
+                  <Star size={28} className={cn('transition-colors', (hoverRating || newRating) >= star ? 'text-accent-amber fill-accent-amber' : 'text-[var(--text-muted)]')} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              placeholder="Share your experience..."
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--glass-border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-accent-violet/50 resize-none h-24 mb-4"
+            />
+            <GradientButton size="md" onClick={handleSubmitReview} disabled={submitting || !selectedSessionId}>
+              {submitting ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : 'Submit Review'}
+            </GradientButton>
+          </>
+        )}
       </GlassCard>
 
       {/* Received */}
